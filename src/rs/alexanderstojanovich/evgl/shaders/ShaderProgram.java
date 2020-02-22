@@ -40,8 +40,9 @@ public class ShaderProgram {
 
     private static ShaderProgram mainShader;
     private static ShaderProgram intrfaceShader;
+    private static ShaderProgram playerShader;
 
-    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[2];
+    private static final ShaderProgram[] SHADER_PROGRAMS = new ShaderProgram[3];
 
     public static void initAllShaders() { // requires initialized OpenGL capabilities
         // 1. Init main shader (skybox, camera)
@@ -60,6 +61,14 @@ public class ShaderProgram {
         intrfaceShaders.add(intrfaceFragmentShader);
         intrfaceShader = new ShaderProgram(intrfaceShaders);
         SHADER_PROGRAMS[1] = intrfaceShader;
+        // 3. Init interface shader (crosshair)
+        Shader playerVertexShader = new Shader(Game.EFFECTS_ENTRY, "playerVS.glsl", Shader.VERTEX_SHADER);
+        Shader playerFragmentShader = new Shader(Game.EFFECTS_ENTRY, "playerFS.glsl", Shader.FRAGMENT_SHADER);
+        List<Shader> playerShaders = new ArrayList<>();
+        playerShaders.add(playerVertexShader);
+        playerShaders.add(playerFragmentShader);
+        playerShader = new ShaderProgram(playerShaders);
+        SHADER_PROGRAMS[2] = playerShader;
     }
 
     public ShaderProgram(List<Shader> shaders) {
@@ -157,6 +166,10 @@ public class ShaderProgram {
 
     public static ShaderProgram getIntrfaceShader() {
         return intrfaceShader;
+    }
+
+    public static ShaderProgram getPlayerShader() {
+        return playerShader;
     }
 
     public static ShaderProgram[] getSHADER_PROGRAMS() {

@@ -20,7 +20,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
-import rs.alexanderstojanovich.evgl.core.LevelRenderer;
+import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 
@@ -34,7 +34,7 @@ public class Chunk {
     public static final int MAT4_SIZE = 16;
 
     // A, B, C are used in chunkFunc and for determining visible chunks
-    public static final int A = Math.round(LevelRenderer.SKYBOX_WIDTH); // modulator
+    public static final int A = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
     public static final int B = A >> 4; // divider    
     public static final float C = 1.5f * B; // determines visibility
 
