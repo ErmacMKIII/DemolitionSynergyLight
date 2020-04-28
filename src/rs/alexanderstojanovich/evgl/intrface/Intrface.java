@@ -490,6 +490,13 @@ public class Intrface {
         }
     }
 
+    // update menu components
+    public void update() {
+        mainMenu.update();
+        optionsMenu.update();
+        editorMenu.update();
+    }
+
     public Window getMyWindow() {
         return myWindow;
     }

@@ -21,7 +21,9 @@ import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.texture.Texture;
@@ -55,6 +57,12 @@ public abstract class Menu {
     protected Quad iterator; // is minigun iterator
 
     protected float alignmentAmount = ALIGNMENT_LEFT;
+
+    // coordinates of the cursor (in OpenGL) when menu is opened
+    protected float xposGL = 0.0f;
+    protected float yposGL = 0.0f;
+
+    protected boolean useMouse = false;
 
     public Menu(Window window, String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
         this.myWindow = window;
@@ -115,7 +123,23 @@ public abstract class Menu {
     public void open() {
         enabled = true;
         GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
+        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), new GLFWCursorPosCallback() {
+            @Override
+            public void invoke(long window, double xpos, double ypos) {
+                // get the new values
+                float new_xposGL = (float) (xpos / myWindow.getWidth() - 0.5f) * 2.0f;
+                float new_yposGL = (float) (0.5f - ypos / myWindow.getHeight()) * 2.0f;
+
+                // if new and prev values aren't the same user moved the mouse
+                if (new_xposGL != xposGL || new_yposGL != yposGL) {
+                    useMouse = true;
+                }
+
+                // assign the new values (remember them)
+                xposGL = new_xposGL;
+                yposGL = new_yposGL;
+            }
+        });
         GLFW.glfwSetCharCallback(myWindow.getWindowID(), null);
         GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
             @Override
@@ -126,6 +150,8 @@ public abstract class Menu {
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev();
@@ -137,7 +163,34 @@ public abstract class Menu {
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
                     execute();
+                }
+            }
+        });
+
+        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), new GLFWMouseButtonCallback() {
+            @Override
+            public void invoke(long window, int button, int action, int mods) {
+                if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
+                    enabled = false;
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
+                    execute();
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
+                    enabled = false;
+                    GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                    GLFW.glfwSetCharCallback(window, null);
+                    GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                    GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
+                    leave();
                 }
             }
         });
@@ -202,6 +255,31 @@ public abstract class Menu {
             selected = 0;
         }
         iterator.setColor(items.get(selected).getQuad().getColor());
+    }
+
+    // if menu is enabled; it's gonna track mouse cursor position 
+    // to determine selected item
+    public void update() {
+        if (enabled && useMouse) {
+            int index = 0;
+            for (Text item : items) {
+                float xMin = item.quad.getPos().x; // it already contains pos.x
+                float xMax = xMin + itemScale * item.content.length() * item.quad.giveRelativeWidth();
+
+                float yMin = item.quad.getPos().y; // it already contains pos.y
+                float yMax = yMin + itemScale * item.quad.giveRelativeHeight();
+
+                if (xposGL >= xMin
+                        && xposGL <= xMax
+                        && yposGL >= yMin
+                        && yposGL <= yMax) {
+                    selected = index;
+                    break;
+                }
+                index++;
+            }
+            useMouse = false;
+        }
     }
 
     public Window getMyWindow() {
@@ -274,6 +352,18 @@ public abstract class Menu {
 
     public float getItemScale() {
         return itemScale;
+    }
+
+    public float getXposGL() {
+        return xposGL;
+    }
+
+    public float getYposGL() {
+        return yposGL;
+    }
+
+    public boolean isUseMouse() {
+        return useMouse;
     }
 
 }

@@ -19,11 +19,13 @@ package rs.alexanderstojanovich.evgl.intrface;
 import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
+import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
+import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import rs.alexanderstojanovich.evgl.core.Combo;
-import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.main.Game;
+import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
 
 /**
@@ -62,7 +64,23 @@ public abstract class OptionsMenu extends Menu {
     public void open() {
         enabled = true;
         GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
+        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), new GLFWCursorPosCallback() {
+            @Override
+            public void invoke(long window, double xpos, double ypos) {
+                // get the new values
+                float new_xposGL = (float) (xpos / myWindow.getWidth() - 0.5f) * 2.0f;
+                float new_yposGL = (float) (0.5f - ypos / myWindow.getHeight()) * 2.0f;
+
+                // if new and prev values aren't the same user moved the mouse
+                if (new_xposGL != xposGL || new_yposGL != yposGL) {
+                    useMouse = true;
+                }
+
+                // assign the new values (remember them)
+                xposGL = new_xposGL;
+                yposGL = new_yposGL;
+            }
+        });
         GLFW.glfwSetCharCallback(myWindow.getWindowID(), null);
         GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
             @Override
@@ -73,6 +91,8 @@ public abstract class OptionsMenu extends Menu {
                     GLFW.glfwSetCharCallback(window, null);
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                    GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                    GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev();
@@ -92,6 +112,29 @@ public abstract class OptionsMenu extends Menu {
                     if (options[selected] != null) {
                         options[selected].selectNext();
                         execute();
+                    }
+                }
+            }
+        });
+
+        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), new GLFWMouseButtonCallback() {
+            @Override
+            public void invoke(long window, int button, int action, int mods) {
+                if (button == GLFW.GLFW_MOUSE_BUTTON_1 && action == GLFW.GLFW_PRESS) {
+                    if (options[selected] != null) {
+                        options[selected].selectNext();
+                        execute();
+                    }
+                } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
+                    if (options[selected] != null) {
+                        enabled = false;
+                        GLFW.glfwSetKeyCallback(window, Game.getDefaultKeyCallback());
+                        GLFW.glfwSetCharCallback(window, null);
+                        GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+                        GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
+                        GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
+                        GLFW.glfwSetCursorPos(myWindow.getWindowID(), Game.getLastX(), Game.getLastY());
+                        leave();
                     }
                 }
             }

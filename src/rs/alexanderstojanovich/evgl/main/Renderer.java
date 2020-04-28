@@ -83,7 +83,7 @@ public class Renderer extends Thread {
             fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
-            if (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
+            while (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
                 synchronized (objMutex) {
                     myWindow.loadContext();
 
@@ -163,6 +163,7 @@ public class Renderer extends Thread {
     public void update() {
         synchronized (objMutex) {
             levelContainer.update();
+            intrface.update();
         }
     }
 

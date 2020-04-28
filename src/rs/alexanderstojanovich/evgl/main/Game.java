@@ -36,7 +36,7 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v15 OXYGEN LSV";
+    public static final String TITLE = "Demolition Synergy - v16 PHOSPHORUS LSV";
 
     public static final int UPS_CAP = 80;
 
@@ -59,10 +59,10 @@ public class Game {
 
     private boolean[] keys = new boolean[1024];
 
-    private float lastX = 0.0f;
-    private float lastY = 0.0f;
-    private float xoffset = 0.0f;
-    private float yoffset = 0.0f;
+    private static float lastX = 0.0f;
+    private static float lastY = 0.0f;
+    private static float xoffset = 0.0f;
+    private static float yoffset = 0.0f;
     private static float mouseSensitivity = 3.0f;
     private boolean moveMouse = false;
 
@@ -73,6 +73,7 @@ public class Game {
 
     private static GLFWKeyCallback defaultKeyCallback;
     private static GLFWCursorPosCallback defaultCursorCallback;
+    private static GLFWMouseButtonCallback defaultMouseButtonCallback;
 
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evgl/resources/";
 
@@ -382,7 +383,7 @@ public class Game {
         };
         GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), defaultCursorCallback);
 
-        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), new GLFWMouseButtonCallback() {
+        defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
             public void invoke(long window, int button, int action, int mods) {
                 if (action == GLFW.GLFW_PRESS) {
@@ -391,7 +392,8 @@ public class Game {
                     mouseButtons[button] = false;
                 }
             }
-        });
+        };
+        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), defaultMouseButtonCallback);
     }
 
     public void go() {
@@ -533,6 +535,26 @@ public class Game {
 
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
+    }
+
+    public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
+        return defaultMouseButtonCallback;
+    }
+
+    public static float getLastX() {
+        return lastX;
+    }
+
+    public static float getLastY() {
+        return lastY;
+    }
+
+    public static float getXoffset() {
+        return xoffset;
+    }
+
+    public static float getYoffset() {
+        return yoffset;
     }
 
 }
