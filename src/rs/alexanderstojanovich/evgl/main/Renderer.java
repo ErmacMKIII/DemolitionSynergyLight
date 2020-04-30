@@ -83,78 +83,72 @@ public class Renderer extends Thread {
             fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
-            while (fpsTicks >= 1.0 && Game.getUpsTicks() < 1.0) { // this prevents rendering loads when game is updating
+            if (fpsTicks >= 1.0) {
                 synchronized (objMutex) {
                     myWindow.loadContext();
-
                     MasterRenderer.render(); // it clears color bit and depth buffer bit
-
                     if (!levelContainer.isWorking()) {
                         levelContainer.render();
                     } else {
                         intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
                         intrface.getProgText().render();
                     }
-
                     intrface.setCollText(assertCollision);
                     intrface.getGameModeText().setContent(Game.getCurrentMode().name());
                     intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
-
                     intrface.render();
                     myWindow.render();
                     fps++;
                     fpsTicks--;
-
-                    // update text which shows ups and fps every second
-                    if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                        intrface.getInfoText().getQuad().getColor().x = 0.0f;
-                        intrface.getInfoText().getQuad().getColor().y = 1.0f;
-                        intrface.getInfoText().getQuad().getColor().z = 0.0f;
-                        intrface.getInfoText().setContent("ups: " + Game.getUps() + " | fps: " + fps);
-                        fps = 0;
-                        timer0 += 1.0;
-                    }
-
-                    // update text which shows dialog every 5 seconds
-                    if (GLFW.glfwGetTime() > timer1 + 5.0) {
-                        if (intrface.getCommandDialog().isDone()) {
-                            intrface.getCommandDialog().setEnabled(false);
-                        }
-                        if (intrface.getSaveDialog().isDone()) {
-                            intrface.getSaveDialog().setEnabled(false);
-                        }
-                        if (intrface.getLoadDialog().isDone()) {
-                            intrface.getLoadDialog().setEnabled(false);
-                        }
-                        if (intrface.getLoadDialog().isDone()) {
-                            intrface.getLoadDialog().setEnabled(false);
-                        }
-                        if (intrface.getRandLvlDialog().isDone()) {
-                            intrface.getRandLvlDialog().setEnabled(false);
-                        }
-                        if (intrface.getSinglePlayerDialog().isDone()) {
-                            intrface.getSinglePlayerDialog().setEnabled(false);
-                        }
-                        timer1 += 5.0;
-                    }
-
-                    // update text which animates water every quarter of the second
-                    if (GLFW.glfwGetTime() > timer2 + 0.25) {
-
-                        if (levelContainer.getProgress() == 100) {
-                            intrface.getProgText().setEnabled(false);
-                            levelContainer.setProgress(0);
-                        }
-
-                        if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
-                            levelContainer.animate();
-                        }
-
-                        timer2 += 0.25;
-                    }
-
                     Window.unloadContext();
                 }
+            }
+
+            // update text which shows ups and fps every second
+            if (GLFW.glfwGetTime() > timer0 + 1.0) {
+                intrface.getFpsText().setContent("fps: " + fps);
+                fps = 0;
+                timer0 += 1.0;
+            }
+
+            // update text which shows dialog every 5 seconds
+            if (GLFW.glfwGetTime() > timer1 + 5.0) {
+                if (intrface.getCommandDialog().isDone()) {
+                    intrface.getCommandDialog().setEnabled(false);
+                }
+                if (intrface.getSaveDialog().isDone()) {
+                    intrface.getSaveDialog().setEnabled(false);
+                }
+                if (intrface.getLoadDialog().isDone()) {
+                    intrface.getLoadDialog().setEnabled(false);
+                }
+                if (intrface.getLoadDialog().isDone()) {
+                    intrface.getLoadDialog().setEnabled(false);
+                }
+                if (intrface.getRandLvlDialog().isDone()) {
+                    intrface.getRandLvlDialog().setEnabled(false);
+                }
+
+                if (intrface.getSinglePlayerDialog().isDone()) {
+                    intrface.getSinglePlayerDialog().setEnabled(false);
+                }
+                timer1 += 5.0;
+            }
+
+            // update text which animates water every quarter of the second
+            if (GLFW.glfwGetTime() > timer2 + 0.25) {
+                if (levelContainer.getProgress() == 100) {
+                    intrface.getProgText().setEnabled(false);
+                    levelContainer.setProgress(0);
+                }
+                synchronized (objMutex) {
+                    myWindow.loadContext();
+                    if (levelContainer.getProgress() == 0.0f && !levelContainer.isWorking()) {
+                        levelContainer.animate();
+                    }
+                    Window.unloadContext();
+                }
+                timer2 += 0.25;
             }
         }
 

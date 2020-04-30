@@ -36,9 +36,9 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v16 PHOSPHORUS LSV";
+    public static final String TITLE = "Demolition Synergy - v17 RELIC LSV";
 
-    public static final int UPS_CAP = 80;
+    public static final int TPS = 80;
 
     public static final float AMOUNT = 0.05f;
     public static final float ANGLE = (float) (Math.PI / 180);
@@ -50,7 +50,6 @@ public class Game {
 
     public static final float EPSILON = 0.0001f;
 
-    private static int upsCap; // updates per second cap 
     private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap 
 
@@ -100,7 +99,6 @@ public class Game {
     public Game(Configuration config) {
         lastX = config.getWidth() / 2.0f;
         lastY = config.getHeight() / 2.0f;
-        Game.upsCap = UPS_CAP;
         Game.fpsMax = config.getFpsCap();
         myWindow = new Window(config.getWidth(), config.getHeight(), TITLE);
         if (config.isFullscreen()) {
@@ -424,7 +422,7 @@ public class Game {
         while (!myWindow.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * upsCap;
+            upsTicks += diff * TPS;
             lastTime = currTime;
 
             while (upsTicks >= 1.0) {
@@ -443,6 +441,7 @@ public class Game {
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
+                renderer.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 ups = 0;
                 timer0 += 1.0;
             }
@@ -487,10 +486,6 @@ public class Game {
 
     public static GLFWCursorPosCallback getDefaultCursorCallback() {
         return defaultCursorCallback;
-    }
-
-    public static int getUpsCap() {
-        return upsCap;
     }
 
     public static int getUps() {

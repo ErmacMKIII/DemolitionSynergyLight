@@ -45,7 +45,8 @@ public class Intrface {
     private final Window myWindow;
 
     private Quad crosshair;
-    private Text infoText; // displays update and framerate
+    private Text updText; // displays update
+    private Text fpsText; // displays framerates
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
     private Text progText; // progress text;
@@ -81,8 +82,13 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        infoText = new Text(myWindow, Texture.FONT, "Welcome to Demolition Synergy!", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
-        infoText.setOffset(new Vector2f(1.0f, 1.0f));
+        updText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
+        updText.quad.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        updText.setOffset(new Vector2f(1.0f, 1.0f));
+        fpsText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
+        fpsText.quad.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        fpsText.setOffset(new Vector2f(1.0f, 1.0f));
+
         collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
         collText.setOffset(new Vector2f(1.0f, -1.0f));
         helpText = new Text(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
@@ -132,7 +138,7 @@ public class Intrface {
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
 
-        commandDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        commandDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "ENTER COMMAND: ", "OK", "ERROR!") {
             @Override
             protected boolean execute(String command) {
@@ -236,7 +242,7 @@ public class Intrface {
             }
         };
 
-        saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -250,7 +256,7 @@ public class Intrface {
             }
         };
 
-        loadDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        loadDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -264,7 +270,7 @@ public class Intrface {
             }
         };
 
-        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f),
+        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "ENTER NUMBER OF BLOCKS (LIMIT 20000): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
@@ -278,7 +284,7 @@ public class Intrface {
             }
         };
 
-        singlePlayerDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.85f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+        singlePlayerDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
             @Override
             protected boolean execute(String command) {
                 boolean ok = false;
@@ -475,7 +481,8 @@ public class Intrface {
         loadDialog.render();
         randLvlDialog.render();
         singlePlayerDialog.render();
-        infoText.render();
+        updText.render();
+        fpsText.render();
         collText.render();
         helpText.render();
         gameModeText.render();
@@ -505,8 +512,12 @@ public class Intrface {
         return crosshair;
     }
 
-    public Text getInfoText() {
-        return infoText;
+    public Text getUpdText() {
+        return updText;
+    }
+
+    public Text getFpsText() {
+        return fpsText;
     }
 
     public Text getCollText() {
