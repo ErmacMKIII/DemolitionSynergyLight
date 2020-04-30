@@ -50,6 +50,7 @@ public class Intrface {
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
     private Text progText; // progress text;
+    private Text screenText; // screenshot information
     private Text gameModeText; // displays game mode {EDITOR, SINGLE_PLAYER or MUTLIPLAYER}
     private boolean showHelp = false;
 
@@ -97,6 +98,9 @@ public class Intrface {
         helpText.setEnabled(false);
         progText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
         progText.setOffset(new Vector2f(1.0f, -1.0f));
+        screenText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
+        screenText.setOffset(new Vector2f(1.0f, 1.0f));
+        screenText.getQuad().setScale(0.75f);
         gameModeText = new Text(myWindow, Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -486,6 +490,7 @@ public class Intrface {
         collText.render();
         helpText.render();
         gameModeText.render();
+        screenText.render();
         mainMenu.render();
         optionsMenu.render();
         editorMenu.render();
@@ -578,6 +583,10 @@ public class Intrface {
 
     public Text getGameModeText() {
         return gameModeText;
+    }
+
+    public Text getScreenText() {
+        return screenText;
     }
 
     public ConcurrentDialog getSinglePlayerDialog() {
