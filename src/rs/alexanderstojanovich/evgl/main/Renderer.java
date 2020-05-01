@@ -41,6 +41,8 @@ public class Renderer extends Thread {
     private boolean assertCollision = false;
 
     private static double fpsTicks = 0.0;
+    private static int renPasses = 0;
+    public static final int REN_MAX_PASSES = 3;
 
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
@@ -83,27 +85,30 @@ public class Renderer extends Thread {
             fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
-            if (fpsTicks >= 1.0) {
-                synchronized (objMutex) {
-                    myWindow.loadContext();
-                    MasterRenderer.render(); // it clears color bit and depth buffer bit
-                    if (!levelContainer.isWorking()) {
-                        levelContainer.render();
-                    } else {
-                        intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
-                        intrface.getProgText().render();
+            if (Game.getUpdPasses() == 0 && Game.getUpsTicks() < 1.0) {
+                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+                    synchronized (objMutex) {
+                        myWindow.loadContext();
+                        MasterRenderer.render(); // it clears color bit and depth buffer bit
+                        if (!levelContainer.isWorking()) {
+                            levelContainer.render();
+                        } else {
+                            intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
+                            intrface.getProgText().render();
+                        }
+                        intrface.setCollText(assertCollision);
+                        intrface.getGameModeText().setContent(Game.getCurrentMode().name());
+                        intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
+                        intrface.render();
+                        myWindow.render();
+                        fps++;
+                        fpsTicks--;
+                        renPasses++;
+                        Window.unloadContext();
                     }
-                    intrface.setCollText(assertCollision);
-                    intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-                    intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
-                    intrface.render();
-                    myWindow.render();
-                    fps++;
-                    fpsTicks--;
-                    Window.unloadContext();
                 }
+                renPasses = 0;
             }
-
             // update text which shows ups and fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
                 intrface.getFpsText().setContent("fps: " + fps);
@@ -195,6 +200,10 @@ public class Renderer extends Thread {
 
     public static void setFpsTicks(double fpsTicks) {
         Renderer.fpsTicks = fpsTicks;
+    }
+
+    public static int getRenPasses() {
+        return renPasses;
     }
 
     public AudioPlayer getMusicPlayer() {

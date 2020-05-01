@@ -58,6 +58,8 @@ public class Game {
 
     private static int ups; // current update per second    
     private static int fpsMax; // fps max or fps cap 
+    private static int updPasses = 0;
+    public static final int UPD_MAX_PASSES = 10;
 
     private final Window myWindow;
     private final Renderer renderer;
@@ -464,18 +466,22 @@ public class Game {
             upsTicks += diff * TPS;
             lastTime = currTime;
 
-            while (upsTicks >= 1.0) {
-                GLFW.glfwPollEvents();
-                renderer.update();
-                if (currentMode == Mode.SINGLE_PLAYER) {
-                    playerDo();
-                } else if (currentMode == Mode.EDITOR) {
-                    renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
-                    editorDo();
+            if (Renderer.getRenPasses() == 0) {
+                while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
+                    GLFW.glfwPollEvents();
+                    renderer.update();
+                    if (currentMode == Mode.SINGLE_PLAYER) {
+                        playerDo();
+                    } else if (currentMode == Mode.EDITOR) {
+                        renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                        editorDo();
+                    }
+                    observerDo();
+                    ups++;
+                    upsTicks--;
+                    updPasses++;
                 }
-                observerDo();
-                ups++;
-                upsTicks--;
+                updPasses = 0;
             }
 
             // update label which shows fps every second
@@ -589,6 +595,10 @@ public class Game {
 
     public static float getYoffset() {
         return yoffset;
+    }
+
+    public static int getUpdPasses() {
+        return updPasses;
     }
 
 }
