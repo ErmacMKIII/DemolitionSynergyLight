@@ -110,7 +110,7 @@ public abstract class Menu {
                 item.getQuad().getColor().z = 0.0f;
             }
             item.getQuad().getPos().x = pos.x;
-            item.getQuad().getPos().y = -Text.LINE_SPACING * items.size() * item.getQuad().giveRelativeHeight() + pos.y;
+            item.getQuad().getPos().y = -Text.LINE_SPACING * items.size() * item.getQuad().getRelativeHeight() + pos.y;
             item.getQuad().setScale(itemScale);
             items.add(item);
         }
@@ -210,12 +210,12 @@ public abstract class Menu {
         if (enabled) {
             int longest = longestWord();
             title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
-                    * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
-            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
+                    * title.getQuad().getRelativeWidth() * itemScale + pos.x;
+            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().getRelativeHeight() * itemScale + pos.y;
             title.render();
             if (logo != null && title.getContent().equals("")) {
                 logo.getPos().x = pos.x;
-                logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
+                logo.getPos().y = logo.getRelativeHeight() * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
                     logo.buffer();
                 }
@@ -225,14 +225,14 @@ public abstract class Menu {
             for (Text item : items) {
                 Quad itemQuad = item.getQuad();
                 int itemDiff = longest - item.getContent().length();
-                itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.giveRelativeWidth() * itemScale + pos.x;
-                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.giveRelativeHeight() + pos.y;
+                itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.getRelativeWidth() * itemScale + pos.x;
+                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.getRelativeHeight() + pos.y;
 
                 item.render();
                 index++;
             }
             iterator.getPos().x = items.get(selected).getQuad().getPos().x;
-            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
+            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().getRelativeWidth() * itemScale;
             iterator.getPos().y = items.get(selected).getQuad().getPos().y;
             if (!iterator.isBuffered()) {
                 iterator.buffer();
@@ -264,10 +264,10 @@ public abstract class Menu {
             int index = 0;
             for (Text item : items) {
                 float xMin = item.quad.getPos().x; // it already contains pos.x
-                float xMax = xMin + itemScale * item.content.length() * item.quad.giveRelativeWidth();
+                float xMax = xMin + itemScale * item.content.length() * item.quad.getRelativeWidth();
 
                 float yMin = item.quad.getPos().y; // it already contains pos.y
-                float yMax = yMin + itemScale * item.quad.giveRelativeHeight();
+                float yMax = yMin + itemScale * item.quad.getRelativeHeight();
 
                 if (xposGL >= xMin
                         && xposGL <= xMax

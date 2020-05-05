@@ -113,8 +113,8 @@ public class Quad {
 
     public void render() { // used for crosshair
         if (enabled && buffered) {
-            float relWidth = giveRelativeWidth();
-            float relHeight = giveRelativeHeight();
+            float relWidth = getRelativeWidth();
+            float relHeight = getRelativeHeight();
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL20.glEnableVertexAttribArray(0);
@@ -143,8 +143,8 @@ public class Quad {
 
     public void render(float xinc, float ydec) { // used for fonts
         if (enabled && buffered) {
-            float relWidth = giveRelativeWidth();
-            float relHeight = giveRelativeHeight();
+            float relWidth = getRelativeWidth();
+            float relHeight = getRelativeHeight();
             Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL20.glEnableVertexAttribArray(0);
@@ -171,12 +171,12 @@ public class Quad {
         }
     }
 
-    public float giveRelativeWidth() {
+    public float getRelativeWidth() {
         float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
         return width * widthFactor / myWindow.getWidth();
     }
 
-    public float giveRelativeHeight() {
+    public float getRelativeHeight() {
         float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
         return height * heightFactor / myWindow.getHeight();
     }

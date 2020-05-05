@@ -25,6 +25,7 @@ import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.intrface.Intrface;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evgl.util.DSLogger;
 
 /**
  *
@@ -85,7 +86,14 @@ public class Renderer extends Thread {
             fpsTicks += diff * Game.getFpsMax();
             lastTime = currTime;
 
-            if (Game.getUpdPasses() == 0 && Game.getUpsTicks() < 1.0) {
+            // Detecting critical status
+            if (fps == 0 && diff > Game.CRITICAL_TIME) {
+                DSLogger.reportFatalError("Game status critical!", null);
+                myWindow.close();
+                break;
+            }
+
+            if (Game.getUpsTicks() < 1.0 && Game.getUpdPasses() == 0) {
                 while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
                     synchronized (objMutex) {
                         myWindow.loadContext();
@@ -118,9 +126,6 @@ public class Renderer extends Thread {
 
             // update text which shows dialog every 5 seconds
             if (GLFW.glfwGetTime() > timer1 + 5.0) {
-                if (intrface.getCommandDialog().isDone()) {
-                    intrface.getCommandDialog().setEnabled(false);
-                }
                 if (intrface.getSaveDialog().isDone()) {
                     intrface.getSaveDialog().setEnabled(false);
                 }
@@ -163,9 +168,9 @@ public class Renderer extends Thread {
 
     }
 
-    public void update() {
+    public void update(float deltaTime) {
         synchronized (objMutex) {
-            levelContainer.update();
+            levelContainer.update(deltaTime);
             intrface.update();
         }
     }

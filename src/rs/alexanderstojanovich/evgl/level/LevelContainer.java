@@ -37,6 +37,7 @@ import rs.alexanderstojanovich.evgl.critter.Critter;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.models.Chunk;
 import rs.alexanderstojanovich.evgl.models.Chunks;
+import rs.alexanderstojanovich.evgl.models.Model;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
@@ -46,10 +47,10 @@ import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
  *
  * @author Coa
  */
-public class LevelContainer {
+public class LevelContainer implements GravityEnviroment {
 
     private final Window myWindow;
-    private final Block skybox = new Block(true, Texture.NIGHT);
+    public static final Block SKYBOX = new Block(true, Texture.NIGHT);
 
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
@@ -59,7 +60,7 @@ public class LevelContainer {
 
     public static final float SKYBOX_SCALE = 256.0f * 256.0f * 256.0f; // default 16.7M
     public static final float SKYBOX_WIDTH = 256.0f; // default 256
-    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for skybox
+    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 10000;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 10000;
@@ -74,19 +75,15 @@ public class LevelContainer {
     private final AudioPlayer musicPlayer;
     private final AudioPlayer soundFXPlayer;
 
-    //----------------Vector3f hash, Block hash---------------------------------
-    private static final Map<Vector3f, Integer> POS_SOLID_MAP = new HashMap<>();
-    private static final Map<Vector3f, Integer> POS_FLUID_MAP = new HashMap<>();
-
     public LevelContainer(Window myWindow, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
         this.myWindow = myWindow;
         this.randomLevelGenerator = new RandomLevelGenerator(this);
         this.musicPlayer = musicPlayer;
         this.soundFXPlayer = soundFXPlayer;
-        // setting skybox        
-        skybox.setPrimaryColor(SKYBOX_COLOR);
-        skybox.setUVsForSkybox();
-        skybox.setScale(SKYBOX_SCALE);
+        // setting SKYBOX        
+        SKYBOX.setPrimaryColor(SKYBOX_COLOR);
+        SKYBOX.setUVsForSkybox();
+        SKYBOX.setScale(SKYBOX_SCALE);
         // setting observer        
     }
 
@@ -103,8 +100,9 @@ public class LevelContainer {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        POS_SOLID_MAP.clear();
-        POS_FLUID_MAP.clear();
+        solidChunks.getPosMap().clear();
+        fluidChunks.getPosMap().clear();
+
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
                 Block entity = new Block(false, Texture.DOOM0);
@@ -112,8 +110,6 @@ public class LevelContainer {
                 entity.getPos().x = 4.0f * i;
                 entity.getPos().y = 4.0f * j;
                 entity.getPos().z = 3.0f;
-
-                POS_SOLID_MAP.put(entity.getPos(), entity.hashCode());
 
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
@@ -157,8 +153,8 @@ public class LevelContainer {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        POS_SOLID_MAP.clear();
-        POS_FLUID_MAP.clear();
+        solidChunks.getPosMap().clear();
+        fluidChunks.getPosMap().clear();
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
@@ -299,8 +295,8 @@ public class LevelContainer {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            POS_SOLID_MAP.clear();
-            POS_FLUID_MAP.clear();
+            solidChunks.getPosMap().clear();
+            fluidChunks.getPosMap().clear();
 
             pos += 2;
             byte[] posArr = new byte[12];
@@ -497,7 +493,7 @@ public class LevelContainer {
         Chunk fluidChunk = fluidChunks.getChunk(Chunk.chunkFunc(obsCamPos));
         if (fluidChunk != null) {
             for (Block fluidBlock : fluidChunk.getBlocks().getBlockList()) {
-                if (fluidBlock.contains(obsCamPos)) {
+                if (fluidBlock.containsInsideEqually(obsCamPos)) {
                     yea = true;
                     break;
                 }
@@ -508,24 +504,53 @@ public class LevelContainer {
 
     public boolean hasCollisionWithCritter(Critter critter) {
         boolean coll;
-        coll = (!skybox.containsExactly(critter.getPredictor()) || !skybox.intersectsExactly(critter.getPredModel()));
-        Vector3f obsPredPos = critter.getPredictor();
-        List<Chunk> visibleChunks = solidChunks.getVisibleChunks();
-        for (Chunk solidChunk : visibleChunks) {
-            for (Block solidBlock : solidChunk.getBlocks().getBlockList()) {
-                if (solidBlock.contains(obsPredPos) || solidBlock.intersects(critter.getPredModel())) {
-                    coll = true;
-                    break;
-                }
+        coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
+                || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+                        critter.getModel().getHeight(), critter.getModel().getDepth()));
+
+        for (Vector3f solidPos : solidChunks.getPosMap().keySet()) {
+            if (Model.containsInsideExactly(solidPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                    || Model.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                            critter.getModel().getHeight(), critter.getModel().getDepth(), solidPos, 2.0f, 2.0f, 2.0f)) {
+                coll = true;
+                break;
             }
         }
+
         return coll;
     }
 
-    public void update() { // call it externally from the main thread 
+    // thats what gravity does, object fells down if they don't have support below it (sky or other object)
+    @Override
+    public void gravityDo(float deltaTime) {
+        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
+        for (Vector3f solidBlockPos : solidMap.keySet()) {
+            Vector3f bottom = new Vector3f(solidBlockPos);
+            bottom.y -= 1.0f;
+            boolean massBelow = false;
+            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
+                if (!solidBlockPos.equals(otherSolidBlockPos)
+                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
+                    massBelow = true;
+                    break;
+                }
+            }
+            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
+            if (!massBelow && inSkybox) {
+                solidBlockPos.y -= value;
+            }
+        }
+        solidChunks.setBuffered(false);
+    }
+
+    public void update(float deltaTime) { // call it externally from the main thread 
         if (working || progress > 0.0f || levelActors.getPlayer() == null) {
             return; // don't update if working, it may screw up!
         }
+
+        SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
+
         Camera obsCamera = levelActors.getPlayer().getCamera();
         int currChunkId = Chunk.chunkFunc(obsCamera.getPos(), obsCamera.getFront());
         List<Integer> visibleList = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront()); // is list of estimated visible chunks (by that chunk)
@@ -559,11 +584,11 @@ public class LevelContainer {
     public void render() { // render for regular level rendering
         levelActors.render();
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        // render skybox
+        // render SKYBOX
         obsCamera.render(ShaderProgram.getMainShader());
         float time = (float) GLFW.glfwGetTime();
-        skybox.setrY(time / 64.0f);
-        skybox.render(ShaderProgram.getMainShader());
+        SKYBOX.setrY(time / 64.0f);
+        SKYBOX.render(ShaderProgram.getMainShader());
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -623,8 +648,8 @@ public class LevelContainer {
         return myWindow;
     }
 
-    public Block getSkybox() {
-        return skybox;
+    public Block getSKYBOX() {
+        return SKYBOX;
     }
 
     public float getProgress() {
@@ -657,14 +682,6 @@ public class LevelContainer {
 
     public int getPos() {
         return pos;
-    }
-
-    public static Map<Vector3f, Integer> getPOS_SOLID_MAP() {
-        return POS_SOLID_MAP;
-    }
-
-    public static Map<Vector3f, Integer> getPOS_FLUID_MAP() {
-        return POS_FLUID_MAP;
     }
 
     public AudioPlayer getMusicPlayer() {

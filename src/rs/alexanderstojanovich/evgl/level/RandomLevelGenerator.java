@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evgl.level;
 
+import java.util.List;
 import org.joml.Random;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
@@ -69,9 +70,9 @@ public class RandomLevelGenerator {
             posy = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.getPOS_SOLID_MAP().get(randPos) != null
-                || LevelContainer.getPOS_FLUID_MAP().get(randPos) != null
-                || levelContainer.getLevelActors().getPlayer().getModel().contains(randPos)
+        } while (levelContainer.getSolidChunks().getPosMap().get(randPos) != null
+                || levelContainer.getFluidChunks().getPosMap().get(randPos) != null
+                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colx = RANDOM.nextFloat();
         float coly = RANDOM.nextFloat();
@@ -94,9 +95,9 @@ public class RandomLevelGenerator {
             posy = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = RANDOM.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             randPos = new Vector3f(posx, posy, posz);
-        } while (LevelContainer.getPOS_SOLID_MAP().get(randPos) != null
-                || LevelContainer.getPOS_FLUID_MAP().get(randPos) != null
-                || levelContainer.getLevelActors().getPlayer().getModel().contains(randPos)
+        } while (levelContainer.getSolidChunks().getPosMap().get(randPos) != null
+                || levelContainer.getFluidChunks().getPosMap().get(randPos) != null
+                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(randPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(randPos));
         float colx = RANDOM.nextFloat();
         float coly = RANDOM.nextFloat();
@@ -110,14 +111,17 @@ public class RandomLevelGenerator {
     }
 
     private Block generateRandomSolidBlockAdjacent(Block block) {
-        int[] possibleFaces = block.getAdjacentFreeFaceNumbers();
-        if (possibleFaces.length == 0) {
+        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers(
+                levelContainer.getSolidChunks().getPosMap(),
+                levelContainer.getFluidChunks().getPosMap()
+        );
+        if (possibleFaces.isEmpty()) {
             return null;
         }
         int randFace;
         Vector3f adjPos;
         do {
-            randFace = possibleFaces[RANDOM.nextInt(possibleFaces.length)];
+            randFace = possibleFaces.get(RANDOM.nextInt(possibleFaces.size()));
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
             switch (randFace) {
                 case Block.LEFT:
@@ -141,9 +145,9 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.getPOS_SOLID_MAP().get(adjPos) != null
-                || LevelContainer.getPOS_FLUID_MAP().get(adjPos) != null
-                || levelContainer.getLevelActors().getPlayer().getModel().contains(adjPos)
+        } while (levelContainer.getSolidChunks().getPosMap().get(adjPos) != null
+                || levelContainer.getFluidChunks().getPosMap().get(adjPos) != null
+                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColx = RANDOM.nextFloat();
         float adjColy = RANDOM.nextFloat();
@@ -157,14 +161,17 @@ public class RandomLevelGenerator {
     }
 
     private Block generateRandomFluidBlockAdjacent(Block block) {
-        int[] possibleFaces = block.getAdjacentFreeFaceNumbers();
-        if (possibleFaces.length == 0) {
+        List<Integer> possibleFaces = block.getAdjacentFreeFaceNumbers(
+                levelContainer.getSolidChunks().getPosMap(),
+                levelContainer.getFluidChunks().getPosMap()
+        );
+        if (possibleFaces.isEmpty()) {
             return null;
         }
         int randFace;
         Vector3f adjPos;
         do {
-            randFace = possibleFaces[RANDOM.nextInt(possibleFaces.length)];
+            randFace = possibleFaces.get(RANDOM.nextInt(possibleFaces.size()));
             adjPos = new Vector3f(block.getPos().x, block.getPos().y, block.getPos().z);
             switch (randFace) {
                 case Block.LEFT:
@@ -188,9 +195,9 @@ public class RandomLevelGenerator {
                 default:
                     break;
             }
-        } while (LevelContainer.getPOS_SOLID_MAP().get(adjPos) != null
-                || LevelContainer.getPOS_FLUID_MAP().get(adjPos) != null
-                || levelContainer.getLevelActors().getPlayer().getModel().contains(adjPos)
+        } while (levelContainer.getSolidChunks().getPosMap().get(adjPos) != null
+                || levelContainer.getFluidChunks().getPosMap().get(adjPos) != null
+                || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(adjPos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(adjPos));
         float adjColx = RANDOM.nextFloat();
         float adjColy = RANDOM.nextFloat();

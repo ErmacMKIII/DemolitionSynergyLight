@@ -53,6 +53,8 @@ public class Texture {
 
     public static final Map<String, Texture> TEX_MAP = new HashMap<>();
 
+    public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
+
     static {
         TEX_MAP.put("doom0", DOOM0);
         TEX_MAP.put("crate", CRATE);

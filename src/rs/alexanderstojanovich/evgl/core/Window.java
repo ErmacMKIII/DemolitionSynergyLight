@@ -181,6 +181,10 @@ public class Window {
         return GLFW.glfwWindowShouldClose(windowID);
     }
 
+    public void close() {
+        GLFW.glfwSetWindowShouldClose(windowID, true);
+    }
+
     public BufferedImage getScreen() {
         final int rgba = 4;
 

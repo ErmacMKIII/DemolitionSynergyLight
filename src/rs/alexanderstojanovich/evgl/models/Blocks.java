@@ -16,11 +16,9 @@
  */
 package rs.alexanderstojanovich.evgl.models;
 
-import java.nio.IntBuffer;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
-import org.lwjgl.BufferUtils;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
@@ -36,7 +34,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     private boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold    
-    public static final IntBuffer CONST_INT_BUFFER = getConstIntBuffer();
     private boolean buffered = false;
 
     public void bufferAll() { // buffer both, call it before any rendering
@@ -44,15 +41,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
             block.bufferAll();
         }
         buffered = true;
-    }
-
-    public static IntBuffer getConstIntBuffer() {
-        IntBuffer intBuff = BufferUtils.createIntBuffer(Block.INDICES_COUNT);
-        for (Integer index : Block.CONST.indices) {
-            intBuff.put(index);
-        }
-        intBuff.flip();
-        return intBuff;
     }
 
     public void animate() { // call only for fluid blocks

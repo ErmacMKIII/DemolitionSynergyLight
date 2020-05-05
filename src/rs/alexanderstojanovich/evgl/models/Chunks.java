@@ -16,7 +16,9 @@
  */
 package rs.alexanderstojanovich.evgl.models;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
@@ -36,83 +38,12 @@ public class Chunks {
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
 
-    private void addNeighbors(Block block) { // called for all blocks before adding        
-        Integer hashCode = block.hashCode();
-        for (int j = 0; j <= 5; j++) { // j - facenum            
-            // updating neighbor from adding block perspective 
-            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
-            Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
-            // whether or not neighbor is found on that side
-            boolean hasNeighbor = true;
-            if (hashCode1 == null && hashCode2 == null) {
-                hasNeighbor = false;
-                block.getAdjacentBlockMap().remove(j);
-            } else if (hashCode1 != null && hashCode2 == null) {
-                block.getAdjacentBlockMap().put(j, hashCode1);
-            } else if (hashCode1 == null && hashCode2 != null) {
-                block.getAdjacentBlockMap().put(j, hashCode2);
-            }
-            if (hasNeighbor) { // this is to be reasonable with heavy loop
-                // updating neighbor from other blocks perspective
-                int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
-                Chunk chunk = getChunk(otherBlockChunkId);
-                if (chunk != null) {
-                    for (Block otherBlock : chunk.getBlocks().getBlockList()) {
-                        if (otherBlock.pos.equals(otherBlockPos)) {
-                            // ok we found out which at which side
-                            otherBlock.getAdjacentBlockMap().put(j % 2 == 0 ? j + 1 : j - 1, hashCode);
-                            break; // goal reached, now leave
-                        }
-                    }
-                }
-            }
-        }
-    }
-
-    private void removeNeighbors(Block block) { // called for all blocks before removing       
-        Integer hashCode = block.hashCode();
-        for (int j = 0; j <= 5; j++) { // j - facenum
-            // updating neighbor from removing block perspective 
-            Vector3f otherBlockPos = block.getAdjacentPos(block.getPos(), j);
-            Integer hashCode1 = LevelContainer.getPOS_SOLID_MAP().get(otherBlockPos);
-            Integer hashCode2 = LevelContainer.getPOS_FLUID_MAP().get(otherBlockPos);
-            // whether or not neighbor is found on that side
-            boolean hasNeighbor = true;
-            if (hashCode1 == null && hashCode2 == null) {
-                hasNeighbor = false;
-                block.getAdjacentBlockMap().remove(j);
-            } else if (hashCode1 != null && hashCode2 == null) {
-                block.getAdjacentBlockMap().remove(j, hashCode1);
-            } else if (hashCode1 == null && hashCode2 != null) {
-                block.getAdjacentBlockMap().remove(j, hashCode2);
-            }
-            // updating neighbor from other blocks perspective
-            int otherBlockChunkId = Chunk.chunkFunc(otherBlockPos);
-            Chunk chunk = getChunk(otherBlockChunkId);
-            if (hasNeighbor) { // this is to be reasonable with heavy loop
-                if (chunk != null) {
-                    for (Block otherBlock : chunk.getBlocks().getBlockList()) {
-                        if (otherBlock.pos.equals(otherBlockPos)) {
-                            // ok we found out which at which side
-                            otherBlock.getAdjacentBlockMap().remove(j % 2 == 0 ? j + 1 : j - 1, hashCode);
-                            break; // goal reached, now leave
-                        }
-                    }
-                }
-            }
-        }
-    }
+    //----------------Vector3f hash, Block hash---------------------------------
+    private final Map<Vector3f, Integer> posMap = new HashMap<>();
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.getPOS_SOLID_MAP().put(block.pos, block.hashCode());
-        } else {
-            LevelContainer.getPOS_FLUID_MAP().put(block.pos, block.hashCode());
-        }
-
-        addNeighbors(block);
+        posMap.put(block.getPos(), block.hashCode());
 
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -129,13 +60,7 @@ public class Chunks {
 
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
-        if (block.solid) {
-            LevelContainer.getPOS_SOLID_MAP().remove(block.pos);
-        } else {
-            LevelContainer.getPOS_FLUID_MAP().remove(block.pos);
-        }
-
-        removeNeighbors(block);
+        posMap.remove(block.getPos());
 
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -154,9 +79,8 @@ public class Chunks {
         for (Block fluidBlock : getTotalList()) {
             fluidBlock.enableAllFaces(false);
             for (int j = 0; j <= 5; j++) { // j - face number
-                Integer hash1 = fluidBlock.getAdjacentBlockMap().get(j);
-                Integer hash2 = LevelContainer.getPOS_FLUID_MAP().get(fluidBlock.getAdjacentPos(fluidBlock.getPos(), j));
-                if (hash1 != null && hash1.equals(hash2)) {
+                Integer hash = posMap.get(Block.getAdjacentPos(fluidBlock.getPos(), j));
+                if (hash != null) {
                     fluidBlock.disableFace(j, false);
                 }
             }
@@ -267,6 +191,10 @@ public class Chunks {
         for (Chunk chunk : getVisibleChunks()) {
             chunk.getBlocks().setCameraInFluid(cameraInFluid);
         }
+    }
+
+    public Map<Vector3f, Integer> getPosMap() {
+        return posMap;
     }
 
 }
