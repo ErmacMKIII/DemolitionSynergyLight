@@ -50,6 +50,8 @@ public class Chunk {
 
     private boolean buffered = false;
 
+    private boolean visible = false;
+
     public Chunk(int id) {
         this.id = id;
     }
@@ -147,6 +149,10 @@ public class Chunk {
         return result;
     }
 
+    public void release() {
+        blocks.release();
+    }
+
     public int size() { // for debugging purposes       
         return blocks.getBlockList().size();
     }
@@ -173,6 +179,14 @@ public class Chunk {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
+    }
+
+    public boolean isVisible() {
+        return visible;
+    }
+
+    public void setVisible(boolean visible) {
+        this.visible = visible;
     }
 
 }

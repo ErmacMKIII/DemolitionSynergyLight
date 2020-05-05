@@ -80,6 +80,14 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
+    public void release() {
+        if (buffered) {
+            for (Block block : blockList) {
+                block.release();
+            }
+        }
+    }
+
     public List<Block> getBlockList() {
         return blockList;
     }

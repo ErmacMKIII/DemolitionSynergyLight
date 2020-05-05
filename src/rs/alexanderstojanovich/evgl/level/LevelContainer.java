@@ -22,13 +22,11 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
-import org.lwjgl.glfw.GLFW;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.audio.AudioFile;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
@@ -558,14 +556,12 @@ public class LevelContainer implements GravityEnviroment {
         visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
         for (Integer i : visibleChunks) {
             Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null && !visibleChunks.contains(i)) {
-                solidChunk.setBuffered(false);
+            if (solidChunk != null) {
+                solidChunk.setVisible(visibleChunks.contains(i));
             }
             Chunk fluidChunk = fluidChunks.getChunk(i);
             if (fluidChunk != null) {
-                if (!visibleChunks.contains(i)) {
-                    fluidChunk.setBuffered(false);
-                }
+                fluidChunk.setVisible(visibleChunks.contains(i));
                 fluidChunk.getBlocks().setCameraInFluid(isCameraInFluid());
             }
         }
@@ -602,19 +598,22 @@ public class LevelContainer implements GravityEnviroment {
         };
 
         /// render blocks        
-        for (Integer i : visibleChunks) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                if (!solidChunk.isBuffered()) {
-                    solidChunk.bufferAll();
-                }
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
+                solidChunk.bufferAll();
+            } else if (!solidChunk.isVisible() && solidChunk.isBuffered()) {
+                solidChunk.release();
+            } else if (solidChunk.isVisible() && solidChunk.isBuffered()) {
                 solidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
             }
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                if (!fluidChunk.isBuffered()) {
-                    fluidChunk.bufferAll();
-                }
+        }
+
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (fluidChunk.isVisible() && !fluidChunk.isBuffered()) {
+                fluidChunk.bufferAll();
+            } else if (!fluidChunk.isVisible() && fluidChunk.isBuffered()) {
+                fluidChunk.release();
+            } else if (fluidChunk.isVisible() && fluidChunk.isVisible()) {
                 fluidChunk.prepare();
                 fluidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
             }
