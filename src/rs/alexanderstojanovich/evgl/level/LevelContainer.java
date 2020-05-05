@@ -29,6 +29,7 @@ import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.lwjgl.glfw.GLFW;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.audio.AudioFile;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.Camera;
@@ -54,6 +55,8 @@ public class LevelContainer implements GravityEnviroment {
 
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
+
+    private List<Integer> visibleChunks = new GapList<>();
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
@@ -552,33 +555,20 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
 
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        int currChunkId = Chunk.chunkFunc(obsCamera.getPos(), obsCamera.getFront());
-        List<Integer> visibleList = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront()); // is list of estimated visible chunks (by that chunk)
-        Chunk currSolid = solidChunks.getChunk(currChunkId);
-        if (currSolid != null) {
-            currSolid.setVisible(true);
-        }
-        for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (visibleList.contains(solidChunk.getId())) {
-                solidChunk.setVisible(true);
-            } else {
-                solidChunk.setVisible(false);
+        visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
+        for (Integer i : visibleChunks) {
+            Chunk solidChunk = solidChunks.getChunk(i);
+            if (solidChunk != null && !visibleChunks.contains(i)) {
+                solidChunk.setBuffered(false);
+            }
+            Chunk fluidChunk = fluidChunks.getChunk(i);
+            if (fluidChunk != null) {
+                if (!visibleChunks.contains(i)) {
+                    fluidChunk.setBuffered(false);
+                }
+                fluidChunk.getBlocks().setCameraInFluid(isCameraInFluid());
             }
         }
-
-        Chunk currFluid = fluidChunks.getChunk(currChunkId);
-        if (currFluid != null) {
-            currFluid.setVisible(true);
-        }
-        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (visibleList.contains(fluidChunk.getId())) {
-                fluidChunk.setVisible(true);
-            } else {
-                fluidChunk.setVisible(false);
-            }
-        }
-
-        fluidChunks.setCameraInFluid(isCameraInFluid());
     }
 
     public void render() { // render for regular level rendering
@@ -586,8 +576,7 @@ public class LevelContainer implements GravityEnviroment {
         Camera obsCamera = levelActors.getPlayer().getCamera();
         // render SKYBOX
         obsCamera.render(ShaderProgram.getMainShader());
-        float time = (float) GLFW.glfwGetTime();
-        SKYBOX.setrY(time / 64.0f);
+
         SKYBOX.render(ShaderProgram.getMainShader());
 
         Block editorNew = Editor.getSelectedNew();
@@ -612,22 +601,25 @@ public class LevelContainer implements GravityEnviroment {
             }
         };
 
-        // render solid series         
-        if (!solidChunks.isBuffered()) {
-            solidChunks.bufferAll();
+        /// render blocks        
+        for (Integer i : visibleChunks) {
+            Chunk solidChunk = solidChunks.getChunk(i);
+            if (solidChunk != null) {
+                if (!solidChunk.isBuffered()) {
+                    solidChunk.bufferAll();
+                }
+                solidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
+            }
+            Chunk fluidChunk = fluidChunks.getChunk(i);
+            if (fluidChunk != null) {
+                if (!fluidChunk.isBuffered()) {
+                    fluidChunk.bufferAll();
+                }
+                fluidChunk.prepare();
+                fluidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
+            }
         }
 
-        // render solid series                 
-        solidChunks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
-
-        // render fluid blocks      
-        if (!fluidChunks.isBuffered()) {
-            fluidChunks.bufferAll();
-        }
-
-        // render fluid blocks              
-        fluidChunks.prepare();
-        fluidChunks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
     }
 
     public boolean maxSolidReached() {

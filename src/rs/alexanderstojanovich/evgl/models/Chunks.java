@@ -22,7 +22,6 @@ import java.util.Map;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
@@ -156,9 +155,7 @@ public class Chunks {
     public List<Chunk> getVisibleChunks() {
         List<Chunk> result = new GapList<>();
         for (Chunk chunk : chunkList) {
-            if (chunk.isVisible()) {
-                result.add(chunk);
-            }
+            result.add(chunk);
         }
         return result;
     }

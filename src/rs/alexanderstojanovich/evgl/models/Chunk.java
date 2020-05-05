@@ -50,8 +50,6 @@ public class Chunk {
 
     private boolean buffered = false;
 
-    private boolean visible = false; // is it visible for rendering
-
     public Chunk(int id) {
         this.id = id;
     }
@@ -71,14 +69,14 @@ public class Chunk {
 
     // it renders all of them instanced if they're visible
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (visible && shaderProgram != null) {
+        if (shaderProgram != null) {
             blocks.render(shaderProgram, lightSrc);
         }
     }
 
     // it renders all of them instanced if they're visible
     public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (visible && shaderProgram != null) {
+        if (shaderProgram != null) {
             blocks.renderIf(shaderProgram, lightSrc, predicate);
         }
     }
@@ -175,14 +173,6 @@ public class Chunk {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-    }
-
-    public boolean isVisible() {
-        return visible;
-    }
-
-    public void setVisible(boolean visible) {
-        this.visible = visible;
     }
 
 }
