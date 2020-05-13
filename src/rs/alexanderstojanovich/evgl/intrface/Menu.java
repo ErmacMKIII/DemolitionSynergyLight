@@ -213,7 +213,7 @@ public abstract class Menu {
                     * title.giveRelativeCharWidth() * itemScale + pos.x;
             title.getPos().y = Text.LINE_SPACING * title.giveRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
-                title.bufferAll();
+                title.buffer();
             }
             title.render();
             if (logo != null && title.getContent().equals("")) {
@@ -230,7 +230,7 @@ public abstract class Menu {
                 item.getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.giveRelativeCharWidth() * itemScale + pos.x;
                 item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.giveRelativeCharHeight() + pos.y;
                 if (!item.isBuffered()) {
-                    item.bufferAll();
+                    item.buffer();
                 }
                 item.render();
                 index++;

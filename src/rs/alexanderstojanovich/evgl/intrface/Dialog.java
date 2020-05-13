@@ -125,7 +125,7 @@ public abstract class Dialog {
     public void render() {
         if (enabled) {
             if (!dialog.isBuffered()) {
-                dialog.bufferAll();
+                dialog.buffer();
             }
             dialog.render();
         }

@@ -143,7 +143,7 @@ public class Console {
             inText.getPos().x = -1.0f;
             inText.getPos().y = 0.5f - panel.getPos().y + inText.giveRelativeCharHeight() / 2.0f;
             if (!inText.isBuffered()) {
-                inText.bufferAll();
+                inText.buffer();
             }
             inText.render();
             int index = 0;
@@ -156,7 +156,7 @@ public class Console {
                     item.getPos().y = prevItem.getPos().y + item.giveRelativeCharHeight() * Text.LINE_SPACING;
                 }
                 if (!item.isBuffered()) {
-                    item.bufferAll();
+                    item.buffer();
                 }
                 item.render();
                 prevItem = item;

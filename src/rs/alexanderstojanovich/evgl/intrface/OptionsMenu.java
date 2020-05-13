@@ -150,23 +150,23 @@ public abstract class OptionsMenu extends Menu {
                     * title.giveRelativeCharWidth() * itemScale + pos.x;
             title.getPos().y = Text.LINE_SPACING * title.giveRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
-                title.bufferAll();
+                title.buffer();
             }
-            title.render();            
+            title.render();
             int index = 0;
             for (Text item : items) {
                 int itemDiff = longest - item.getContent().length();
                 item.getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.giveRelativeCharWidth() * itemScale + pos.x;
                 item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.giveRelativeCharHeight() + pos.y;
                 if (!item.isBuffered()) {
-                    item.bufferAll();
+                    item.buffer();
                 }
                 item.render();
                 values[index].getPos().x = item.getPos().x;
                 values[index].getPos().x += (item.getContent().length() + 1) * item.giveRelativeCharWidth() * itemScale;
                 values[index].getPos().y = item.getPos().y;
                 if (!values[index].isBuffered()) {
-                    values[index].bufferAll();
+                    values[index].buffer();
                 }
                 values[index].render();
                 index++;

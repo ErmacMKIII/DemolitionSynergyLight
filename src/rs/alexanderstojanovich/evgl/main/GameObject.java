@@ -60,7 +60,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             levelContainer.render();
         } else {
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
-            intrface.getProgText().render();
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
         intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));

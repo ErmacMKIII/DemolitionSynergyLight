@@ -64,8 +64,8 @@ public class LevelContainer implements GravityEnviroment {
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
 
-    public static final int MAX_NUM_OF_SOLID_BLOCKS = 10000;
-    public static final int MAX_NUM_OF_FLUID_BLOCKS = 10000;
+    public static final int MAX_NUM_OF_SOLID_BLOCKS = 25000;
+    public static final int MAX_NUM_OF_FLUID_BLOCKS = 25000;
 
     private float progress = 0.0f;
 

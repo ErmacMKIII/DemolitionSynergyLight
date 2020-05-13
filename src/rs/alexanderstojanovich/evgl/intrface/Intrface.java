@@ -167,7 +167,7 @@ public class Intrface {
         };
 
         randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "ENTER NUMBER OF BLOCKS (LIMIT 20000): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
+                "ENTER NUMBER OF BLOCKS (LIMIT 50000): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
@@ -381,29 +381,31 @@ public class Intrface {
         randLvlDialog.render();
         singlePlayerDialog.render();
         if (!updText.isBuffered()) {
-            updText.bufferAll();
+            updText.buffer();
         }
         updText.render();
         if (!fpsText.isBuffered()) {
-            fpsText.bufferAll();
+            fpsText.buffer();
         }
         fpsText.render();
         if (!collText.isBuffered()) {
-            collText.bufferAll();
+            collText.buffer();
         }
         collText.render();
-        if (!helpText.isBuffered()) {            
-        }   helpText.render();
+        if (!helpText.isBuffered()) {
+            helpText.buffer();
+        }
         helpText.render();
         if (!gameModeText.isBuffered()) {
-            gameModeText.bufferAll();
+            gameModeText.buffer();
         }
-        if (!gameModeText.isBuffered()) {
-            gameModeText.bufferAll();
-        }        
         gameModeText.render();
+        if (!progText.isBuffered()) {
+            progText.buffer();
+        }
+        progText.render();
         if (!screenText.isBuffered()) {
-            screenText.bufferAll();
+            screenText.buffer();
         }
         screenText.render();
         mainMenu.render();
