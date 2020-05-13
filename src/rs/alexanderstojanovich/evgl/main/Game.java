@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evgl.core.MasterRenderer;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.critter.Observer;
 import rs.alexanderstojanovich.evgl.level.Editor;
-import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 
@@ -378,7 +377,7 @@ public class Game {
                     gameObject.printInfo();
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    LevelContainer.printPositionSets();
+//                    LevelContainer.printPositionSets();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     File screenDir = new File(SCREENSHOTS);
