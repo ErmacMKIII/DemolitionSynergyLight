@@ -78,6 +78,15 @@ public class Chunk {
         this.solid = solid;
     }
 
+    private void updateFluids(Block fluidBlock) { // call only for fluid blocks after adding
+        for (int j = 0; j <= 5; j++) { // j - face number
+            if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
+                fluidBlock.disableFace(j, false);
+            }
+        }
+        buffered = false;
+    }
+
     public void addBlock(Block block) {
         if (block.solid) {
             LevelContainer.ALL_SOLID_POS.add(new Vector3f(block.pos));
@@ -87,6 +96,9 @@ public class Chunk {
 
         blocks.getBlockList().add(block);
         blocks.getBlockList().sort(Block.Y_AXIS_COMP);
+        if (!block.solid) {
+            updateFluids(block);
+        }
         buffered = false;
     }
 
@@ -97,6 +109,9 @@ public class Chunk {
             LevelContainer.ALL_FLUID_POS.remove(block.pos);
         }
         blocks.getBlockList().remove(block);
+        if (!block.solid) {
+            updateFluids(block);
+        }
         buffered = false;
     }
 

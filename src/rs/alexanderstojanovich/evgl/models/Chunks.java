@@ -20,10 +20,8 @@ import java.util.Comparator;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
-import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
-import rs.alexanderstojanovich.evgl.util.Tuple;
 
 /**
  *
@@ -77,19 +75,6 @@ public class Chunks {
             if (chunk.getBlocks().getBlockList().isEmpty()) {
                 chunkList.remove(chunk);
             }
-        }
-    }
-
-    public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
-        if (!fluidChunk.isSolid()) {
-            for (Block fluidBlock : fluidChunk.getBlocks().getBlockList()) {
-                for (int j = 0; j <= 5; j++) { // j - face number
-                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
-                        fluidBlock.disableFace(j, false);
-                    }
-                }
-            }
-            fluidChunk.setBuffered(false);
         }
     }
 
