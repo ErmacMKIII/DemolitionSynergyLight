@@ -52,9 +52,9 @@ public abstract class OptionsMenu extends Menu {
         options = new Combo[items.size()];
         for (int i = 0; i < values.length; i++) {
             values[i] = new Text(myWindow, Texture.FONT, "");
-            values[i].getQuad().getPos().x = items.get(i).getQuad().getPos().x;
-            values[i].getQuad().getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).getQuad().giveRelativeWidth();
-            values[i].getQuad().getPos().y = items.get(i).getQuad().getPos().y;
+            values[i].getPos().x = items.get(i).getPos().x;
+            values[i].getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).giveRelativeCharWidth();
+            values[i].getPos().y = items.get(i).getPos().y;
         }
     }
 
@@ -146,26 +146,35 @@ public abstract class OptionsMenu extends Menu {
         if (enabled) {
             refreshValues();
             int longest = longestWord();
-            title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
-                    * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
-            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
-            title.render();
+            title.getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
+                    * title.giveRelativeCharWidth() * itemScale + pos.x;
+            title.getPos().y = Text.LINE_SPACING * title.giveRelativeCharHeight() * itemScale + pos.y;
+            if (!title.isBuffered()) {
+                title.bufferAll();
+            }
+            title.render();            
             int index = 0;
             for (Text item : items) {
                 int itemDiff = longest - item.getContent().length();
-                item.getQuad().getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.getQuad().giveRelativeWidth() * itemScale + pos.x;
-                item.getQuad().getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.getQuad().giveRelativeHeight() + pos.y;
+                item.getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.giveRelativeCharWidth() * itemScale + pos.x;
+                item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.giveRelativeCharHeight() + pos.y;
+                if (!item.isBuffered()) {
+                    item.bufferAll();
+                }
                 item.render();
-                values[index].getQuad().getPos().x = item.getQuad().getPos().x;
-                values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().giveRelativeWidth() * itemScale;
-                values[index].getQuad().getPos().y = item.getQuad().getPos().y;
+                values[index].getPos().x = item.getPos().x;
+                values[index].getPos().x += (item.getContent().length() + 1) * item.giveRelativeCharWidth() * itemScale;
+                values[index].getPos().y = item.getPos().y;
+                if (!values[index].isBuffered()) {
+                    values[index].bufferAll();
+                }
                 values[index].render();
                 index++;
             }
-            iterator.getPos().x = items.get(selected).getQuad().getPos().x;
-            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
-            iterator.getPos().y = items.get(selected).getQuad().getPos().y;
-            iterator.setColor(items.get(selected).getQuad().getColor());
+            iterator.getPos().x = items.get(selected).getPos().x;
+            iterator.getPos().x -= 2.0f * items.get(selected).giveRelativeCharWidth() * itemScale;
+            iterator.getPos().y = items.get(selected).getPos().y;
+            iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {
                 iterator.buffer();
             }

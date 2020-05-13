@@ -80,23 +80,23 @@ public class Intrface {
         AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
         updText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
-        updText.getQuad().setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        updText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         updText.setOffset(new Vector2f(1.0f, 1.0f));
         fpsText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
-        fpsText.getQuad().setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        fpsText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         fpsText.setOffset(new Vector2f(1.0f, 1.0f));
 
         collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
         collText.setOffset(new Vector2f(1.0f, -1.0f));
         helpText = new Text(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
         helpText.setOffset(new Vector2f(1.0f, 1.0f));
-        helpText.getQuad().setScale(0.625f);
+        helpText.setScale(0.625f);
         helpText.setEnabled(false);
         progText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
         progText.setOffset(new Vector2f(1.0f, -1.0f));
         screenText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
         screenText.setOffset(new Vector2f(1.0f, 1.0f));
-        screenText.getQuad().setScale(0.625f);
+        screenText.setScale(0.625f);
         gameModeText = new Text(myWindow, Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
 
         crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
@@ -353,14 +353,14 @@ public class Intrface {
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
-            collText.getQuad().getColor().x = 1.0f;
-            collText.getQuad().getColor().y = 0.0f;
-            collText.getQuad().getColor().z = 0.0f;
+            collText.getColor().x = 1.0f;
+            collText.getColor().y = 0.0f;
+            collText.getColor().z = 0.0f;
         } else {
             collText.setContent("No Collision");
-            collText.getQuad().getColor().x = 0.0f;
-            collText.getQuad().getColor().y = 1.0f;
-            collText.getQuad().getColor().z = 0.0f;
+            collText.getColor().x = 0.0f;
+            collText.getColor().y = 1.0f;
+            collText.getColor().z = 0.0f;
         }
     }
 
@@ -380,11 +380,31 @@ public class Intrface {
         loadDialog.render();
         randLvlDialog.render();
         singlePlayerDialog.render();
+        if (!updText.isBuffered()) {
+            updText.bufferAll();
+        }
         updText.render();
+        if (!fpsText.isBuffered()) {
+            fpsText.bufferAll();
+        }
         fpsText.render();
+        if (!collText.isBuffered()) {
+            collText.bufferAll();
+        }
         collText.render();
+        if (!helpText.isBuffered()) {            
+        }   helpText.render();
         helpText.render();
+        if (!gameModeText.isBuffered()) {
+            gameModeText.bufferAll();
+        }
+        if (!gameModeText.isBuffered()) {
+            gameModeText.bufferAll();
+        }        
         gameModeText.render();
+        if (!screenText.isBuffered()) {
+            screenText.bufferAll();
+        }
         screenText.render();
         mainMenu.render();
         optionsMenu.render();
