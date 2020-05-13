@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evgl.texture;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL13;
 import org.lwjgl.opengl.GL20;
@@ -30,19 +31,22 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
  */
 public class Texture {
 
-    private Image image;
+    private final Image image;
     private int textureID;
+    private boolean buffered = false;
 
     public static final Texture LOGO = new Texture(Game.INTRFACE_ENTRY, "ds_title_gray.png");
     public static final Texture CROSSHAIR = new Texture(Game.INTRFACE_ENTRY, "crosshairUltimate.png");
     public static final Texture MINIGUN = new Texture(Game.INTRFACE_ENTRY, "minigun.png");
-    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "hack.png");
+    public static final Texture FONT = new Texture(Game.INTRFACE_ENTRY, "font.png");
     public static final Texture DOOM0 = new Texture(Game.WORLD_ENTRY, "doom0.png");
     public static final Texture CRATE = new Texture(Game.WORLD_ENTRY, "crate.png");
     public static final Texture STONE = new Texture(Game.WORLD_ENTRY, "stone.png");
     public static final Texture WATER = new Texture(Game.WORLD_ENTRY, "water.png");
     public static final Texture NIGHT = new Texture(Game.WORLD_ENTRY, "night.png");
     public static final Texture MARBLE = new Texture(Game.WORLD_ENTRY, "marble.png");
+    public static final Texture QMARK = new Texture(Game.WORLD_ENTRY, "qmark.png");
+    public static final Texture DECAL = new Texture(Game.WORLD_ENTRY, "decal.png");
 
     public static final Texture PISTOL = new Texture(Game.PLAYER_ENTRY, "pistol.png");
     public static final Texture ASSAULT_RIFLE = new Texture(Game.PLAYER_ENTRY, "assault_rifle.png");
@@ -51,25 +55,52 @@ public class Texture {
     public static final Texture MACHINE_GUN = new Texture(Game.PLAYER_ENTRY, "machine_gun.png");
     public static final Texture SNIPER_RIFLE = new Texture(Game.PLAYER_ENTRY, "sniper_rifle.png");
 
-    public static final Map<String, Texture> TEX_MAP = new HashMap<>();
-
     public static final Texture CONSOLE = new Texture(Game.INTRFACE_ENTRY, "console.png");
 
+    public static final Map<String, Texture> TEX_MAP = new HashMap<>();
+
     static {
+        // interface stuff
+        TEX_MAP.put("logox", LOGO);
+        TEX_MAP.put("xhair", CROSSHAIR);
+        TEX_MAP.put("minigun", MINIGUN);
+        TEX_MAP.put("font", FONT);
+        TEX_MAP.put("console", CONSOLE);
+        // world stuff
         TEX_MAP.put("doom0", DOOM0);
         TEX_MAP.put("crate", CRATE);
         TEX_MAP.put("stone", STONE);
         TEX_MAP.put("water", WATER);
+        TEX_MAP.put("night", NIGHT);
+        TEX_MAP.put("marble", MARBLE);
+        TEX_MAP.put("qmark", QMARK);
+        TEX_MAP.put("decal", DECAL);
+        // player stuff
+        TEX_MAP.put("pistol", Texture.PISTOL);
+        TEX_MAP.put("assrifle", Texture.ASSAULT_RIFLE);
+        TEX_MAP.put("shotgun", Texture.SHOTGUN);
+        TEX_MAP.put("smg", Texture.SUB_MACHINE_GUN);
+        TEX_MAP.put("machgun", Texture.MACHINE_GUN);
+        TEX_MAP.put("sniper", Texture.SNIPER_RIFLE);
     }
 
     public Texture(int width, int height) {
         this.image = new Image(width, height);
-        loadToGraphicCard();
     }
 
     public Texture(String subDir, String fileName) {
         this.image = new Image(subDir, fileName);
+    }
+
+    public void bufferAll() {
         loadToGraphicCard();
+        buffered = true;
+    }
+
+    public static void bufferAllTextures() {
+        for (Texture texture : TEX_MAP.values()) {
+            texture.bufferAll();
+        }
     }
 
     private void loadToGraphicCard() {
@@ -122,21 +153,40 @@ public class Texture {
     }
 
     @Override
+    public int hashCode() {
+        int hash = 7;
+        hash = 73 * hash + Objects.hashCode(this.image);
+        hash = 73 * hash + this.textureID;
+        hash = 73 * hash + (this.buffered ? 1 : 0);
+        return hash;
+    }
+
+    @Override
     public boolean equals(Object obj) {
-        if (obj instanceof Texture) {
-            Texture that = (Texture) obj;
-            return this.textureID == that.textureID;
-        } else {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
             return false;
         }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Texture other = (Texture) obj;
+        if (this.textureID != other.textureID) {
+            return false;
+        }
+        if (this.buffered != other.buffered) {
+            return false;
+        }
+        if (!Objects.equals(this.image, other.image)) {
+            return false;
+        }
+        return true;
     }
 
     public Image getImage() {
         return image;
-    }
-
-    public void setImage(Image image) {
-        this.image = image;
     }
 
     public int getTextureID() {
@@ -145,6 +195,10 @@ public class Texture {
 
     public void setTextureID(int textureID) {
         this.textureID = textureID;
+    }
+
+    public boolean isBuffered() {
+        return buffered;
     }
 
 }

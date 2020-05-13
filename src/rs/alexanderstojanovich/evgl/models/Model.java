@@ -34,12 +34,11 @@ import java.util.zip.ZipFile;
 import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
-import rs.alexanderstojanovich.evgl.level.LevelContainer;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
@@ -53,11 +52,10 @@ public class Model implements Comparable<Model> {
 
     private String modelFileName;
 
-    protected List<Vertex> vertices = new ArrayList<>();
+    protected List<Vertex> vertices = new GapList<>();
     protected List<Integer> indices = new ArrayList<>(); // refers which vertex we want to use when       
-    protected Texture primaryTexture;
-    protected Texture secondaryTexture;
-    protected Texture tertiaryTexture;
+    protected String texName;
+    protected Texture waterTexture;
 
     protected float width; // X axis dimension
     protected float height; // Y axis dimension
@@ -73,43 +71,14 @@ public class Model implements Comparable<Model> {
     protected float rY = 0.0f;
     protected float rZ = 0.0f;
 
-    protected Vector4f primaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    protected Vector4f secondaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
-    protected Vector4f tertiaryColor = new Vector4f(1.0f, 1.0f, 1.0f, 1.0f);
+    protected Vector3f primaryColor = new Vector3f(1.0f, 1.0f, 1.0f);
 
     protected Vector3f light = new Vector3f();
 
     protected boolean solid = true; // is movement through this model possible
     // fluid models are solid whilst solid ones aren't               
 
-    protected Matrix4f modelMatrix = new Matrix4f();
-
-    protected float xMin, yMin, zMin;
-    protected float xMax, yMax, zMax;
-
     protected boolean buffered = false; // is it buffered, it must be buffered before rendering otherwise FATAL ERROR
-
-    public static final Model PISTOL = new Model(true, Game.PLAYER_ENTRY, "pistol.obj",
-            Texture.PISTOL, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SUB_MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "sub_machine_gun.obj",
-            Texture.SUB_MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SHOTGUN = new Model(true, Game.PLAYER_ENTRY, "shotgun.obj",
-            Texture.SHOTGUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model ASSAULT_RIFLE = new Model(true, Game.PLAYER_ENTRY, "assault_rifle.obj",
-            Texture.ASSAULT_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model MACHINE_GUN = new Model(true, Game.PLAYER_ENTRY, "machine_gun.obj",
-            Texture.MACHINE_GUN, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-    public static final Model SNIPER_RIFLE = new Model(true, Game.PLAYER_ENTRY, "sniper_rifle.obj",
-            Texture.SNIPER_RIFLE, new Vector3f(1.0f, -1.0f, 3.0f), LevelContainer.SKYBOX_COLOR, false);
-
-    public static final Model[] WEAPONS = {PISTOL, SUB_MACHINE_GUN, SHOTGUN, ASSAULT_RIFLE, MACHINE_GUN, SNIPER_RIFLE};
-
-    static {
-        for (Model weapon : WEAPONS) {
-            weapon.scale = 6.0f;
-            weapon.rY = (float) (-Math.PI / 2.0f);
-        }
-    }
 
     protected Model() { // constructor for overriding; it does nothing; also for prediction model for collision        
 
@@ -126,9 +95,9 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, String texName) {
         this.modelFileName = modelFileName;
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {
             bufferVertices();
@@ -138,9 +107,9 @@ public class Model implements Comparable<Model> {
         calcDims();
     }
 
-    public Model(boolean selfBuffer, String dirEntry, String modelFileName, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
+    public Model(boolean selfBuffer, String dirEntry, String modelFileName, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         this.modelFileName = modelFileName;
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         readFromObjFile(dirEntry, modelFileName);
         if (selfBuffer) {
             bufferVertices();
@@ -327,23 +296,22 @@ public class Model implements Comparable<Model> {
             shaderProgram.bind();
             transform(shaderProgram);
             useLight(shaderProgram);
+            setAlpha(shaderProgram);
+
+            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
             if (primaryTexture != null) { // this is primary texture
                 primaryColor(shaderProgram);
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
             }
-            if (secondaryTexture != null) { // this is editor overlay texture
+
+            if (waterTexture != null) { // this is reflective texture
                 secondaryColor(shaderProgram);
-                secondaryTexture.bind(1, shaderProgram, "modelTexture1");
-            }
-            if (tertiaryTexture != null) { // this is reflective texture
-                tertiaryColor(shaderProgram);
-                tertiaryTexture.bind(2, shaderProgram, "modelTexture2");
+                waterTexture.bind(1, shaderProgram, "modelTexture1");
             }
         }
         GL11.glDrawElements(GL11.GL_TRIANGLES, indices.size(), GL11.GL_UNSIGNED_INT, 0);
         Texture.unbind(0);
         Texture.unbind(1);
-        Texture.unbind(2);
         ShaderProgram.unbind();
 
         GL20.glDisableVertexAttribArray(0);
@@ -362,17 +330,18 @@ public class Model implements Comparable<Model> {
         buffered = false;
     }
 
-    public void calcModelMatrix() {
+    public Matrix4f calcModelMatrix() {
         Matrix4f translationMatrix = new Matrix4f().setTranslation(pos);
         Matrix4f rotationMatrix = new Matrix4f().setRotationXYZ(rX, rY, rZ);
         Matrix4f scaleMatrix = new Matrix4f().scale(scale);
 
         Matrix4f temp = new Matrix4f();
-        modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        Matrix4f modelMatrix = translationMatrix.mul(rotationMatrix.mul(scaleMatrix, temp), temp);
+        return modelMatrix;
     }
 
     protected void transform(ShaderProgram shaderProgram) {
-        calcModelMatrix();
+        Matrix4f modelMatrix = calcModelMatrix();
         shaderProgram.updateUniform(modelMatrix, "modelMatrix");
     }
 
@@ -381,26 +350,26 @@ public class Model implements Comparable<Model> {
     }
 
     protected void secondaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(secondaryColor, "modelColor1");
-    }
-
-    protected void tertiaryColor(ShaderProgram shaderProgram) {
-        shaderProgram.updateUniform(tertiaryColor, "modelColor2");
+        shaderProgram.updateUniform(new Vector3f(1.0f, 1.0f, 1.0f), "modelColor2");
     }
 
     protected void useLight(ShaderProgram shaderProgram) {
         shaderProgram.updateUniform(light, "modelLight");
     }
 
+    protected void setAlpha(ShaderProgram shaderProgram) {
+        shaderProgram.updateUniform(solid ? 1.0f : 0.5f, "modelAlpha");
+    }
+
     private void calcDims() {
         Vector3f vect = vertices.get(0).getPos();
-        xMin = vect.x;
-        yMin = vect.y;
-        zMin = vect.z;
+        float xMin = vect.x;
+        float yMin = vect.y;
+        float zMin = vect.z;
 
-        xMax = vect.x;
-        yMax = vect.y;
-        zMax = vect.z;
+        float xMax = vect.x;
+        float yMax = vect.y;
+        float zMax = vect.z;
 
         for (int i = 1; i < vertices.size(); i++) {
             vect = vertices.get(i).getPos();
@@ -584,7 +553,7 @@ public class Model implements Comparable<Model> {
 
     @Override
     public String toString() {
-        return "Model{" + "modelFileName=" + modelFileName + ", texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
+        return "Model{" + "modelFileName=" + modelFileName + ", texName = " + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public void animate(boolean selfBuffer) {
@@ -603,24 +572,6 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    public float getAvgSize() {
-        float xAbs = Math.abs(xMax - xMin);
-        float yAbs = Math.abs(yMax - yMin);
-        float zAbs = Math.abs(zMax - zMin);
-
-        return (xAbs + yAbs + zAbs) / 3.0f;
-    }
-
-    public void autoSize() {
-//        float avg = getAvgSize();
-//        for (Vertex vertex : vertices) {
-//            vertex.getPos().div(avg);
-//        }
-//        scale = 1.0f;
-//        calcDims();
-//        bufferVertices();
-    }
-
     @Override
     public int compareTo(Model model) {
         return Float.compare(this.getPos().y, model.getPos().y);
@@ -631,8 +582,20 @@ public class Model implements Comparable<Model> {
         calcModelMatrix();
     }
 
-    public float giveSurfacePos() {
+    public float getSurfaceY() {
+        return (this.pos.y + this.height / 2.0f);
+    }
+
+    public static float getSurfaceY(Vector3f modelPos, float modelHeight) {
+        return (modelPos.y + modelHeight / 2.0f);
+    }
+
+    public float getBottomY() {
         return (this.pos.y - this.height / 2.0f);
+    }
+
+    public static float getBottomY(Vector3f modelPos, float modelHeight) {
+        return (modelPos.y - modelHeight / 2.0f);
     }
 
     public String getModelFileName() {
@@ -647,16 +610,8 @@ public class Model implements Comparable<Model> {
         return indices;
     }
 
-    public Texture getPrimaryTexture() {
-        return primaryTexture;
-    }
-
-    public Texture getSecondaryTexture() {
-        return secondaryTexture;
-    }
-
-    public Texture getTertiaryTexture() {
-        return tertiaryTexture;
+    public Texture getWaterTexture() {
+        return waterTexture;
     }
 
     public float getWidth() {
@@ -681,10 +636,6 @@ public class Model implements Comparable<Model> {
 
     public Vector3f getPos() {
         return pos;
-    }
-
-    public Matrix4f getModelMatrix() {
-        return modelMatrix;
     }
 
     public float getScale() {
@@ -722,28 +673,12 @@ public class Model implements Comparable<Model> {
         this.rZ = rZ;
     }
 
-    public Vector4f getPrimaryColor() {
+    public Vector3f getPrimaryColor() {
         return primaryColor;
     }
 
-    public void setPrimaryColor(Vector4f primaryColor) {
+    public void setPrimaryColor(Vector3f primaryColor) {
         this.primaryColor = primaryColor;
-    }
-
-    public Vector4f getSecondaryColor() {
-        return secondaryColor;
-    }
-
-    public void setSecondaryColor(Vector4f secondaryColor) {
-        this.secondaryColor = secondaryColor;
-    }
-
-    public Vector4f getTertiaryColor() {
-        return tertiaryColor;
-    }
-
-    public void setTertiaryColor(Vector4f tertiaryColor) {
-        this.tertiaryColor = tertiaryColor;
     }
 
     public Vector3f getLight() {
@@ -766,16 +701,16 @@ public class Model implements Comparable<Model> {
         this.pos = pos;
     }
 
-    public void setPrimaryTexture(Texture primaryTexture) {
-        this.primaryTexture = primaryTexture;
+    public String getTexName() {
+        return texName;
     }
 
-    public void setSecondaryTexture(Texture secondaryTexture) {
-        this.secondaryTexture = secondaryTexture;
+    public void setTexName(String texName) {
+        this.texName = texName;
     }
 
-    public void setTertiaryTexture(Texture tertiaryTexture) {
-        this.tertiaryTexture = tertiaryTexture;
+    public void setWaterTexture(Texture waterTexture) {
+        this.waterTexture = waterTexture;
     }
 
     public boolean isBuffered() {
@@ -789,7 +724,7 @@ public class Model implements Comparable<Model> {
             return (this.vertices.equals(that.vertices)
                     && this.indices.equals(that.indices)
                     && this.pos.equals(that.pos)
-                    && this.primaryTexture.equals(that.primaryTexture)
+                    && this.texName.equals(that.texName)
                     && this.primaryColor.equals(that.primaryColor)
                     && this.width == that.width
                     && this.height == that.height
@@ -805,7 +740,7 @@ public class Model implements Comparable<Model> {
         int hash = 7;
         hash = 43 * hash + Objects.hashCode(this.vertices);
         hash = 43 * hash + Objects.hashCode(this.indices);
-        hash = 43 * hash + Objects.hashCode(this.primaryTexture);
+        hash = 43 * hash + Objects.hashCode(this.texName);
         hash = 43 * hash + Float.floatToIntBits(this.width);
         hash = 43 * hash + Float.floatToIntBits(this.height);
         hash = 43 * hash + Float.floatToIntBits(this.depth);

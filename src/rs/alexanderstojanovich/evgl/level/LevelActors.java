@@ -18,11 +18,9 @@ package rs.alexanderstojanovich.evgl.level;
 
 import java.util.List;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.critter.NPC;
 import rs.alexanderstojanovich.evgl.critter.Player;
-import rs.alexanderstojanovich.evgl.texture.Texture;
 
 /**
  *
@@ -30,7 +28,7 @@ import rs.alexanderstojanovich.evgl.texture.Texture;
  */
 public class LevelActors {
 
-    private final Player player = new Player("icosphere.obj", Texture.MARBLE, new Vector3f(10.5f, 0.0f, -3.0f), new Vector4f(1.0f, 1.0f, 1.0f, 1.0f), 0.05f);
+    private final Player player = new Player(null, "icosphere.obj", "marble.png", new Vector3f(10.5f, 0.0f, -3.0f), new Vector3f(1.0f, 1.0f, 1.0f), 0.25f);
     private final List<NPC> npcList = new GapList<>();
 
     public void freeze() {

@@ -56,9 +56,9 @@ public class Console {
         this.panel.setIgnoreFactor(true);
 
         this.inText = new Text(myWindow, Texture.FONT, "]_");
-        this.inText.quad.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
-        this.inText.quad.getPos().x = -1.0f;
-        this.inText.quad.getPos().y = 0.5f - panel.getPos().y + inText.quad.getRelativeHeight() / 2.0f;
+        this.inText.getQuad().setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        this.inText.getQuad().getPos().x = -1.0f;
+        this.inText.getQuad().getPos().y = 0.5f - panel.getPos().y + inText.getQuad().giveRelativeHeight() / 2.0f;
 
         this.inText.setOffset(new Vector2f(1.0f, 0.0f));
 
@@ -70,7 +70,7 @@ public class Console {
             enabled = true;
 
             inText.setContent("]_");
-            inText.quad.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+            inText.getQuad().setColor(new Vector3f(0.0f, 1.0f, 0.0f));
 
             GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
@@ -92,20 +92,20 @@ public class Console {
                         }
                     } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
                         if (!input.toString().equals("")) {
-//                            for (DynamicText item : history) {
-//                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
+//                            for (Text item : history) {
+//                                item.getQuad().getPos().y += item.getRelativeCharHeight() * Text.LINE_SPACING;
 //                            }
                             Text text = new Text(myWindow, Texture.FONT, "");
                             boolean execStatus = commands.execute(input.toString());
                             if (execStatus) {
                                 text.setContent(input.toString());
-                                text.quad.setColor(new Vector3f(1.0f, 1.0f, 1.0f));
+                                text.getQuad().setColor(new Vector3f(1.0f, 1.0f, 1.0f));
                             } else {
                                 text.setContent("Invalid Command!");
-                                text.quad.setColor(new Vector3f(1.0f, 0.0f, 0.0f));
+                                text.getQuad().setColor(new Vector3f(1.0f, 0.0f, 0.0f));
                             }
-                            text.quad.setPos(new Vector2f(inText.quad.getPos()));
-                            text.quad.getPos().y += text.quad.getRelativeHeight() * Text.LINE_SPACING;
+                            text.getQuad().setPos(new Vector2f(inText.getQuad().getPos()));
+                            text.getQuad().getPos().y += text.getQuad().giveRelativeHeight() * Text.LINE_SPACING;
                             text.setOffset(new Vector2f(1.0f, 0.0f));
                             history.add(0, text);
 
@@ -140,17 +140,17 @@ public class Console {
                 panel.buffer();
             }
             panel.render();
-            inText.quad.getPos().x = -1.0f;
-            inText.quad.getPos().y = 0.5f - panel.getPos().y + inText.quad.getRelativeHeight() / 2.0f;
+            inText.getQuad().getPos().x = -1.0f;
+            inText.getQuad().getPos().y = 0.5f - panel.getPos().y + inText.getQuad().giveRelativeHeight() / 2.0f;
             inText.render();
             int index = 0;
             Text prevItem = null;
             for (Text item : history) {
-                item.quad.getPos().x = -1.0f;
+                item.getQuad().getPos().x = -1.0f;
                 if (index == 0) {
-                    item.quad.getPos().y = inText.quad.getPos().y + item.quad.getRelativeHeight() * Text.LINE_SPACING;
+                    item.getQuad().getPos().y = inText.getQuad().getPos().y + item.getQuad().giveRelativeHeight() * Text.LINE_SPACING;
                 } else if (prevItem != null) {
-                    item.quad.getPos().y = prevItem.quad.getPos().y + item.quad.getRelativeHeight() * Text.LINE_SPACING;
+                    item.getQuad().getPos().y = prevItem.getQuad().getPos().y + item.getQuad().giveRelativeHeight() * Text.LINE_SPACING;
                 }
                 item.render();
                 prevItem = item;

@@ -35,7 +35,7 @@ public class Text {
     protected static final float CELL_SIZE = 1.0f / GRID_SIZE;
     public static final float LINE_SPACING = 1.5f;
 
-    protected final Quad quad;
+    private final Quad quad;
 
     protected boolean enabled;
 

@@ -28,11 +28,11 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import org.lwjgl.glfw.GLFWMouseButtonCallback;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evgl.audio.AudioFile;
-import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.MasterRenderer;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.critter.Observer;
 import rs.alexanderstojanovich.evgl.level.Editor;
+import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 
@@ -42,9 +42,7 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
  */
 public class Game {
 
-    public static final String TITLE = "Demolition Synergy - v18 STONEWALL LSV";
-
-    public static final int TPS = 80;
+    public static final int TPS = 80; // TICKS PER SECOND GENERATED
 
     public static final float AMOUNT = 0.05f;
     public static final float ANGLE = (float) (Math.PI / 180);
@@ -57,16 +55,15 @@ public class Game {
     public static final float EPSILON = 0.0001f;
 
     private static int ups; // current update per second    
-    private static int fpsMax; // fps max or fps cap 
+    private static int fpsMax; // fps max or fps cap     
     private static int updPasses = 0;
     public static final int UPD_MAX_PASSES = 10;
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
 
-    private final Window myWindow;
-    private final Renderer renderer;
+    private final GameObject gameObject;
 
-    private boolean[] keys = new boolean[1024];
+    private final boolean[] keys = new boolean[512];
 
     private static float lastX = 0.0f;
     private static float lastY = 0.0f;
@@ -84,6 +81,8 @@ public class Game {
     private static GLFWCursorPosCallback defaultCursorCallback;
     private static GLFWMouseButtonCallback defaultMouseButtonCallback;
 
+    public static final String ROOT = "/";
+    public static final String CURR = "./";
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evgl/resources/";
 
     public static final String DATA_ZIP = "dsynergy_lsv.zip";
@@ -91,163 +90,155 @@ public class Game {
     public static final String SCREENSHOTS = "screenshots";
 
     public static final String INTRFACE_ENTRY = "intrface/";
+    public static final String PLAYER_ENTRY = "player/";
     public static final String WORLD_ENTRY = "world/";
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
-    public static final String PLAYER_ENTRY = "player/";
-
-    private final Object objMutex = new Object(); // aka MUTEX and SYNC for "main" and "Renderer"
 
     private static double upsTicks = 0.0;
-
-    private final AudioPlayer musicPlayer = new AudioPlayer();
-    private final AudioPlayer soundFXPlayer = new AudioPlayer();
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
     };
     private static Mode currentMode = Mode.FREE;
 
-    public Game(Configuration config) {
+    public Game(GameObject gameObject, Configuration config) {
+        this.gameObject = gameObject;
         lastX = config.getWidth() / 2.0f;
         lastY = config.getHeight() / 2.0f;
         Game.fpsMax = config.getFpsCap();
-        myWindow = new Window(config.getWidth(), config.getHeight(), TITLE);
         if (config.isFullscreen()) {
-            myWindow.fullscreen();
+            gameObject.getMyWindow().fullscreen();
         } else {
-            myWindow.windowed();
+            gameObject.getMyWindow().windowed();
         }
         if (config.isVsync()) {
-            myWindow.enableVSync();
+            gameObject.getMyWindow().enableVSync();
         } else {
-            myWindow.disableVSync();
+            gameObject.getMyWindow().disableVSync();
         }
-        myWindow.centerTheWindow();
-        renderer = new Renderer(myWindow, objMutex, musicPlayer, soundFXPlayer);
-        keys = new boolean[1024];
+        gameObject.getMyWindow().centerTheWindow();
+        Arrays.fill(keys, false);
         initCallbacks();
-        musicPlayer.setGain(config.getMusicVolume());
-        soundFXPlayer.setGain(config.getSoundFXVolume());
     }
 
     private void observerDo() {
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
-            Observer obs = renderer.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
             obs.movePredictorForward(AMOUNT);
-            if (renderer.getLevelContainer().hasCollisionWithCritter(obs)) {
+            if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorBackward(AMOUNT);
-                renderer.setAssertCollision(true);
+                gameObject.setAssertCollision(true);
             } else {
                 obs.moveForward(AMOUNT);
-                renderer.setAssertCollision(false);
+                gameObject.setAssertCollision(false);
             }
         }
         if (keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) {
-            Observer obs = renderer.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
             obs.movePredictorBackward(AMOUNT);
-            if (renderer.getLevelContainer().hasCollisionWithCritter(obs)) {
+            if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorForward(AMOUNT);
-                renderer.setAssertCollision(true);
+                gameObject.setAssertCollision(true);
             } else {
                 obs.moveBackward(AMOUNT);
-                renderer.setAssertCollision(false);
+                gameObject.setAssertCollision(false);
             }
 
         }
         if (keys[GLFW.GLFW_KEY_A]) {
-            Observer obs = renderer.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
             obs.movePredictorLeft(AMOUNT);
-            if (renderer.getLevelContainer().hasCollisionWithCritter(obs)) {
+            if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorRight(AMOUNT);
-                renderer.setAssertCollision(true);
+                gameObject.setAssertCollision(true);
             } else {
                 obs.moveLeft(AMOUNT);
-                renderer.setAssertCollision(false);
+                gameObject.setAssertCollision(false);
             }
         }
         if (keys[GLFW.GLFW_KEY_D]) {
-            Observer obs = renderer.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
             obs.movePredictorRight(AMOUNT);
-            if (renderer.getLevelContainer().hasCollisionWithCritter(obs)) {
+            if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorLeft(AMOUNT);
-                renderer.setAssertCollision(true);
+                gameObject.setAssertCollision(true);
             } else {
                 obs.moveRight(AMOUNT);
-                renderer.setAssertCollision(false);
+                gameObject.setAssertCollision(false);
             }
         }
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().turnLeft(ANGLE);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().turnLeft(ANGLE);
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().turnRight(ANGLE);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().turnRight(ANGLE);
         }
         if (moveMouse) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().lookAt(mouseSensitivity, xoffset, yoffset);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().lookAt(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
     }
 
     private void editorDo() {
         if (keys[GLFW.GLFW_KEY_N]) {
-            Editor.selectNew(renderer.getLevelContainer());
+            Editor.selectNew(gameObject);
         }
         //----------------------------------------------------------------------
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrSolid(renderer.getLevelContainer());
+            Editor.selectCurrSolid(gameObject);
         }
 
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_LEFT] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectCurrFluid(renderer.getLevelContainer());
+            Editor.selectCurrFluid(gameObject);
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_1] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.LEFT);
+            Editor.selectAdjacentSolid(gameObject, Block.LEFT);
         }
         if (keys[GLFW.GLFW_KEY_2] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.RIGHT);
+            Editor.selectAdjacentSolid(gameObject, Block.RIGHT);
         }
         if (keys[GLFW.GLFW_KEY_3] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.BOTTOM);
+            Editor.selectAdjacentSolid(gameObject, Block.BOTTOM);
         }
         if (keys[GLFW.GLFW_KEY_4] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.TOP);
+            Editor.selectAdjacentSolid(gameObject, Block.TOP);
         }
         if (keys[GLFW.GLFW_KEY_5] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.BACK);
+            Editor.selectAdjacentSolid(gameObject, Block.BACK);
         }
         if (keys[GLFW.GLFW_KEY_6] && !keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentSolid(renderer.getLevelContainer(), Block.FRONT);
+            Editor.selectAdjacentSolid(gameObject, Block.FRONT);
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_1] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.LEFT);
+            Editor.selectAdjacentFluid(gameObject, Block.LEFT);
         }
         if (keys[GLFW.GLFW_KEY_2] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.RIGHT);
+            Editor.selectAdjacentFluid(gameObject, Block.RIGHT);
         }
         if (keys[GLFW.GLFW_KEY_3] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.BOTTOM);
+            Editor.selectAdjacentFluid(gameObject, Block.BOTTOM);
         }
         if (keys[GLFW.GLFW_KEY_4] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.TOP);
+            Editor.selectAdjacentFluid(gameObject, Block.TOP);
         }
         if (keys[GLFW.GLFW_KEY_5] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.BACK);
+            Editor.selectAdjacentFluid(gameObject, Block.BACK);
         }
         if (keys[GLFW.GLFW_KEY_6] && keys[GLFW.GLFW_KEY_LEFT_SHIFT]) {
-            Editor.selectAdjacentFluid(renderer.getLevelContainer(), Block.FRONT);
+            Editor.selectAdjacentFluid(gameObject, Block.FRONT);
         }
         //----------------------------------------------------------------------
         if (keys[GLFW.GLFW_KEY_0] || keys[GLFW.GLFW_KEY_F]) {
             Editor.deselect();
         }
         if (mouseButtons[GLFW.GLFW_MOUSE_BUTTON_RIGHT]) {
-            Editor.add(renderer.getLevelContainer());
+            Editor.add(gameObject);
         }
         if (keys[GLFW.GLFW_KEY_R]) {
-            Editor.remove(renderer.getLevelContainer());
+            Editor.remove(gameObject);
         }
     }
 
@@ -257,22 +248,22 @@ public class Game {
         }
 
         if (keys[GLFW.GLFW_KEY_1]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().switchWeapon(1);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(1);
         }
         if (keys[GLFW.GLFW_KEY_2]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().switchWeapon(2);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(2);
         }
         if (keys[GLFW.GLFW_KEY_3]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().switchWeapon(3);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(3);
         }
         if (keys[GLFW.GLFW_KEY_4]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().switchWeapon(4);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(4);
         }
         if (keys[GLFW.GLFW_KEY_5]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().switchWeapon(5);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(5);
         }
         if (keys[GLFW.GLFW_KEY_6]) {
-            renderer.getLevelContainer().getLevelActors().getPlayer().switchWeapon(6);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().switchWeapon(6);
         }
 
         if (keys[GLFW.GLFW_KEY_R]) {
@@ -281,9 +272,9 @@ public class Game {
     }
 
     private void setCrosshairColor(float red, float green, float blue) {
-        renderer.getIntrface().getCrosshair().getColor().x = red;
-        renderer.getIntrface().getCrosshair().getColor().y = green;
-        renderer.getIntrface().getCrosshair().getColor().z = blue;
+        gameObject.getIntrface().getCrosshair().getColor().x = red;
+        gameObject.getIntrface().getCrosshair().getColor().y = green;
+        gameObject.getIntrface().getCrosshair().getColor().z = blue;
     }
 
     private void setNewBlockColor(float red, float green, float blue) {
@@ -366,23 +357,30 @@ public class Game {
             public void invoke(long window, int key, int scancode, int action, int mods) {
                 if (key == GLFW.GLFW_KEY_ESCAPE && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().setShowHelp(false);
-                    renderer.getIntrface().getHelpText().setEnabled(false);
-                    renderer.getIntrface().getCollText().setEnabled(true);
-                    renderer.getIntrface().getMainMenu().open();
+                    gameObject.getIntrface().setShowHelp(false);
+                    gameObject.getIntrface().getHelpText().setEnabled(false);
+                    gameObject.getIntrface().getCollText().setEnabled(true);
+                    gameObject.getIntrface().getMainMenu().open();
                 } else if (key == GLFW.GLFW_KEY_GRAVE_ACCENT && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getConsole().open();
+                    gameObject.getIntrface().getConsole().open();
                 } else if (key == GLFW.GLFW_KEY_F1 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().toggleShowHelp();
+                    gameObject.getIntrface().toggleShowHelp();
                 } else if (key == GLFW.GLFW_KEY_F2 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getSaveDialog().open();
+                    gameObject.getIntrface().getSaveDialog().open();
                 } else if (key == GLFW.GLFW_KEY_F3 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
-                    renderer.getIntrface().getLoadDialog().open();
+                    gameObject.getIntrface().getLoadDialog().open();
+                } else if (key == GLFW.GLFW_KEY_F4 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
+                    gameObject.printInfo();
+                } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
+                    LevelContainer.printPositionSets();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
                     File screenDir = new File(SCREENSHOTS);
                     if (!screenDir.isDirectory() && !screenDir.exists()) {
                         screenDir.mkdir();
@@ -400,27 +398,27 @@ public class Game {
                     if (screenshot.exists()) {
                         screenshot.delete();
                     }
-                    synchronized (objMutex) {
-                        myWindow.loadContext();
+                    synchronized (Main.OBJ_MUTEX) {
+                        gameObject.getMyWindow().loadContext();
                         GL.setCapabilities(MasterRenderer.getGlCaps());
                         try {
-                            ImageIO.write(myWindow.getScreen(), "PNG", screenshot);
+                            ImageIO.write(gameObject.getMyWindow().getScreen(), "PNG", screenshot);
                         } catch (IOException ex) {
                             DSLogger.reportError(ex.getMessage(), ex);
                         }
                         GL.setCapabilities(null);
                         Window.unloadContext();
                     }
-                    renderer.getIntrface().getScreenText().setEnabled(true);
-                    renderer.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
+                    gameObject.getIntrface().getScreenText().setEnabled(true);
+                    gameObject.getIntrface().getScreenText().setContent("Screen saved to " + screenshot.getAbsolutePath());
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleBlockColor();
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    Editor.selectPrevTexture(renderer.getLevelContainer());
+                    Editor.selectPrevTexture(gameObject);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    Editor.selectNextTexture(renderer.getLevelContainer());
+                    Editor.selectNextTexture(gameObject);
                 } else {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;
@@ -430,17 +428,17 @@ public class Game {
                 }
             }
         };
-        GLFW.glfwSetKeyCallback(myWindow.getWindowID(), defaultKeyCallback);
+        GLFW.glfwSetKeyCallback(gameObject.getMyWindow().getWindowID(), defaultKeyCallback);
 
-        GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
-        GLFW.glfwSetCursorPos(myWindow.getWindowID(), myWindow.getWidth() / 2.0, myWindow.getHeight() / 2.0);
+        GLFW.glfwSetInputMode(gameObject.getMyWindow().getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
+        GLFW.glfwSetCursorPos(gameObject.getMyWindow().getWindowID(), gameObject.getMyWindow().getWidth() / 2.0, gameObject.getMyWindow().getHeight() / 2.0);
         defaultCursorCallback = new GLFWCursorPosCallback() {
             @Override
             public void invoke(long window, double xpos, double ypos) {
-                xoffset = ((float) xpos - lastX) / myWindow.getWidth();
-                yoffset = (lastY - (float) ypos) / myWindow.getHeight();
+                xoffset = ((float) xpos - lastX) / gameObject.getMyWindow().getWidth();
+                yoffset = (lastY - (float) ypos) / gameObject.getMyWindow().getHeight();
 
-                if (xoffset != 0 || yoffset != 0) {
+                if (xoffset != 0.0f || yoffset != 0.0f) {
                     moveMouse = true;
                 }
 
@@ -448,7 +446,7 @@ public class Game {
                 lastY = (float) ypos;
             }
         };
-        GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), defaultCursorCallback);
+        GLFW.glfwSetCursorPosCallback(gameObject.getMyWindow().getWindowID(), defaultCursorCallback);
 
         defaultMouseButtonCallback = new GLFWMouseButtonCallback() {
             @Override
@@ -460,25 +458,13 @@ public class Game {
                 }
             }
         };
-        GLFW.glfwSetMouseButtonCallback(myWindow.getWindowID(), defaultMouseButtonCallback);
+        GLFW.glfwSetMouseButtonCallback(gameObject.getMyWindow().getWindowID(), defaultMouseButtonCallback);
     }
 
     public void go() {
-        // start the renderer
-        renderer.start();
-
-        // wait for renderer to initialize level renderer, water renderer and interface
-        synchronized (objMutex) {
-            try {
-                objMutex.wait();
-            } catch (InterruptedException ex) {
-                DSLogger.reportFatalError(ex.getMessage(), ex);
-            }
-        }
-
         // start the music
         AudioFile audioFile = AudioFile.AMBIENT;
-        musicPlayer.play(audioFile, true);
+        gameObject.getMusicPlayer().play(audioFile, true);
 
         double timer0 = GLFW.glfwGetTime();
 
@@ -488,27 +474,30 @@ public class Game {
         double currTime;
         double diff;
 
-        while (!myWindow.shouldClose()) {
+        while (!gameObject.getMyWindow().shouldClose()) {
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            upsTicks += diff * TPS;
+            upsTicks += diff * Game.TPS;
             lastTime = currTime;
 
             // Detecting critical status
             if (ups == 0 && diff > CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                myWindow.close();
+                gameObject.getMyWindow().close();
                 break;
             }
 
-            if (Renderer.getRenPasses() == 0) {
+            if (upsTicks > 1.0) {
                 while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
                     GLFW.glfwPollEvents();
-                    renderer.update((float) (upsTicks / TPS));
+                    if (Renderer.getRenPasses() == 0) {
+                        float deltaTime = (float) (upsTicks / TPS);
+                        gameObject.update(deltaTime);
+                    }
                     if (currentMode == Mode.SINGLE_PLAYER) {
                         playerDo();
                     } else if (currentMode == Mode.EDITOR) {
-                        renderer.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
+                        gameObject.getLevelContainer().getLevelActors().getPlayer().setCurrWeapon(null);
                         editorDo();
                     }
                     observerDo();
@@ -521,42 +510,26 @@ public class Game {
 
             // update label which shows fps every second
             if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                renderer.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
+                gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
                 ups = 0;
                 timer0 += 1.0;
             }
 
         }
-
-        Thread randDialogThread = renderer.getIntrface().getRandLvlDialog().getDialogThread();
-
-        try {
-            if (randDialogThread != null && randDialogThread.isAlive()) {
-                randDialogThread.join();
-            }
-            renderer.join(); // waits for the renderer to finish life         
-        } catch (InterruptedException ex) {
-            DSLogger.reportFatalError(ex.getMessage(), ex);
-        }
-
-        synchronized (objMutex) {
-            myWindow.loadContext();
-            myWindow.destroy();
-        }
-
-        musicPlayer.stop();
+        // stops the music
+        gameObject.getMusicPlayer().stop();
     }
 
     public Configuration makeConfig() {
         Configuration cfg = new Configuration();
         cfg.setFpsCap(fpsMax);
-        cfg.setWidth(myWindow.getWidth());
-        cfg.setHeight(myWindow.getHeight());
-        cfg.setFullscreen(myWindow.isFullscreen());
-        cfg.setVsync(myWindow.isVsync());
+        cfg.setWidth(gameObject.getMyWindow().getWidth());
+        cfg.setHeight(gameObject.getMyWindow().getHeight());
+        cfg.setFullscreen(gameObject.getMyWindow().isFullscreen());
+        cfg.setVsync(gameObject.getMyWindow().isVsync());
         cfg.setMouseSensitivity(mouseSensitivity);
-        cfg.setMusicVolume(musicPlayer.getGain());
-        cfg.setSoundFXVolume(soundFXPlayer.getGain());
+        cfg.setMusicVolume(gameObject.getMusicPlayer().getGain());
+        cfg.setSoundFXVolume(gameObject.getSoundFXPlayer().getGain());
         return cfg;
     }
 
@@ -566,6 +539,10 @@ public class Game {
 
     public static GLFWCursorPosCallback getDefaultCursorCallback() {
         return defaultCursorCallback;
+    }
+
+    public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
+        return defaultMouseButtonCallback;
     }
 
     public static int getUps() {
@@ -580,10 +557,6 @@ public class Game {
         Game.fpsMax = fpsMax;
     }
 
-    public Object getObjMutex() {
-        return objMutex;
-    }
-
     public static float getMouseSensitivity() {
         return mouseSensitivity;
     }
@@ -596,24 +569,12 @@ public class Game {
         return upsTicks;
     }
 
-    public AudioPlayer getMusicPlayer() {
-        return musicPlayer;
-    }
-
-    public AudioPlayer getSoundFXPlayer() {
-        return soundFXPlayer;
-    }
-
     public static Mode getCurrentMode() {
         return currentMode;
     }
 
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
-    }
-
-    public static GLFWMouseButtonCallback getDefaultMouseButtonCallback() {
-        return defaultMouseButtonCallback;
     }
 
     public static float getLastX() {

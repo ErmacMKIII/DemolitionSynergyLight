@@ -28,16 +28,17 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import org.joml.GeometryUtils;
+import java.util.Set;
+import org.joml.Intersectionf;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
+import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
-import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
  *
@@ -62,6 +63,9 @@ public class Block extends Model {
     public static final int VERTEX_COUNT = 24;
     public static final int INDICES_COUNT = 36;
 
+    public static final List<Vertex> VERTICES = new GapList<>();
+    public static final List<Integer> INDICES = new ArrayList<>();
+
     public static final Comparator<Block> Y_AXIS_COMP = new Comparator<Block>() {
         @Override
         public int compare(Block o1, Block o2) {
@@ -82,12 +86,15 @@ public class Block extends Model {
         FACE_NORMALS.add(new Vector3f(0.0f, 1.0f, 0.0f));
         FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, -1.0f));
         FACE_NORMALS.add(new Vector3f(0.0f, 0.0f, 1.0f));
+
+        readFromTxtFile("cube.txt");
     }
 
     public Block(boolean selfBuffer) {
         super();
         Arrays.fill(enabledFaces, true);
-        readFromTxtFile("cube.txt");
+        deepCopyTo(vertices);
+        indices = new ArrayList<>(INDICES);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -96,11 +103,12 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(boolean selfBuffer, Texture primaryTexture) {
+    public Block(boolean selfBuffer, String texName) {
         super();
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         Arrays.fill(enabledFaces, true);
-        readFromTxtFile("cube.txt");
+        deepCopyTo(vertices);
+        indices = new ArrayList<>(INDICES);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -109,14 +117,15 @@ public class Block extends Model {
         calcDims();
     }
 
-    public Block(boolean selfBuffer, Texture primaryTexture, Vector3f pos, Vector4f primaryColor, boolean solid) {
+    public Block(boolean selfBuffer, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super();
-        this.primaryTexture = primaryTexture;
+        this.texName = texName;
         Arrays.fill(enabledFaces, true);
         this.pos = pos;
         this.primaryColor = primaryColor;
         this.solid = solid;
-        readFromTxtFile("cube.txt");
+        deepCopyTo(vertices);
+        indices = new ArrayList<>(INDICES);
         if (selfBuffer) {
             bufferVertices();
             bufferIndices();
@@ -125,10 +134,17 @@ public class Block extends Model {
         calcDims();
     }
 
-    private void readFromTxtFile(String fileName) {
-        InputStream in = getClass().getResourceAsStream(Game.RESOURCES_DIR + fileName);
+    // cuz regular shallow copy doesn't work, for List of integers is applicable
+    public static void deepCopyTo(List<Vertex> vertices) {
+        for (Vertex v : VERTICES) {
+            vertices.add(new Vertex(new Vector3f(v.getPos()), new Vector3f(v.getNormal()), new Vector2f(v.getUv())));
+        }
+    }
+
+    private static void readFromTxtFile(String fileName) {
+        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
         if (in == null) {
-            DSLogger.reportError("Cannot find zip archive " + Game.RESOURCES_DIR + "!", null);
+            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
             return;
         }
         BufferedReader br = null;
@@ -142,12 +158,12 @@ public class Block extends Model {
                     Vector3f normal = new Vector3f(Float.parseFloat(things[3]), Float.parseFloat(things[4]), Float.parseFloat(things[5]));
                     Vector2f uv = new Vector2f(Float.parseFloat(things[6]), Float.parseFloat(things[7]));
                     Vertex v = new Vertex(pos, normal, uv);
-                    vertices.add(v);
+                    VERTICES.add(v);
                 } else if (line.startsWith("i:")) {
                     String[] things = line.replace("i:", "").trim().split(" ", -1);
-                    indices.add(Integer.parseInt(things[0]));
-                    indices.add(Integer.parseInt(things[1]));
-                    indices.add(Integer.parseInt(things[2]));
+                    INDICES.add(Integer.parseInt(things[0]));
+                    INDICES.add(Integer.parseInt(things[1]));
+                    INDICES.add(Integer.parseInt(things[2]));
                 }
             }
         } catch (FileNotFoundException ex) {
@@ -208,13 +224,13 @@ public class Block extends Model {
 
     private void calcDims() {
         Vector3f vect = vertices.get(0).getPos();
-        xMin = vect.x;
-        yMin = vect.y;
-        zMin = vect.z;
+        float xMin = vect.x;
+        float yMin = vect.y;
+        float zMin = vect.z;
 
-        xMax = vect.x;
-        yMax = vect.y;
-        zMax = vect.z;
+        float xMax = vect.x;
+        float yMax = vect.y;
+        float zMax = vect.z;
 
         for (int i = 1; i < vertices.size(); i++) {
             vect = vertices.get(i).getPos();
@@ -234,7 +250,7 @@ public class Block extends Model {
 
     @Override
     public String toString() {
-        return "Block{" + "texture=" + primaryTexture.getImage().getFileName() + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
+        return "Block{" + "texture=" + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
     }
 
     public int faceAdjacentBy(Block block) { // which face of "this" is adjacent to compared "block"
@@ -340,7 +356,7 @@ public class Block extends Model {
         }
     }
 
-    public void setUVsForSkybox() {
+    public void setUVsForSkybox(boolean selfBuffer) {
         revertGroupsOfVertices();
         // LEFT
         vertices.get(4 * LEFT).getUv().x = 0.5f;
@@ -379,7 +395,10 @@ public class Block extends Model {
             vertices.get(4 * BOTTOM + i).getUv().x = vertices.get(4 * LEFT + i).getUv().x;
             vertices.get(4 * BOTTOM + i).getUv().y = vertices.get(4 * LEFT + i).getUv().y + 1.0f / 3.0f;
         }
-        bufferVertices();
+
+        if (selfBuffer) {
+            bufferVertices();
+        }
     }
 
     private void revertGroupsOfVertices() {
@@ -442,6 +461,47 @@ public class Block extends Model {
         return bits;
     }
 
+    // used in static Level container to get compressed positioned sets
+    public static int getFaceBits(Vector3f pos, Set<Vector3f> vectorSet) {
+        int bits = 0;
+        for (int j = 0; j <= 5; j++) {
+            Vector3f adjPos = Block.getAdjacentPos(pos, j);
+            for (Vector3f vector : vectorSet) {
+                if (vector.equals(adjPos)) {
+                    int mask = 1 << j;
+                    bits |= mask;
+                    break;
+                }
+            }
+        }
+        return bits;
+    }
+
+    // set faces based on faceBits representation
+    public void setFaceBits(int faceBits, boolean selfBuffer) {
+        boolean[] faces = faceBitsToBoolArray(faceBits);
+        for (int j = 0; j <= 5; j++) {
+            if (faces[j]) {
+                enableFace(j, selfBuffer);
+            } else {
+                disableFace(j, selfBuffer);
+            }
+        }
+    }
+
+    // returns bool array of faces based on facebits representation
+    public static boolean[] faceBitsToBoolArray(int faceBits) {
+        boolean[] result = new boolean[6];
+        int j = 0;
+        while (faceBits > 0) {
+            int bit = faceBits & 1; // compare the rightmost bit with one and assign it to bit
+            result[j] = (bit == 1);
+            faceBits >>= 1; // move bits to the right so they are compared again            
+            j++;
+        }
+        return result;
+    }
+
     // make int buffer base on bits form of faces
     public static IntBuffer createIntBuffer(int faceBits) {
         // creating indices
@@ -472,11 +532,11 @@ public class Block extends Model {
     }
 
     // returns array of adjacent free face numbers (those faces without adjacent neighbor nearby)
-    public List<Integer> getAdjacentFreeFaceNumbers(Map<Vector3f, Integer> solidMap, Map<Vector3f, Integer> fluidMap) {
+    public List<Integer> getAdjacentFreeFaceNumbers() {
         List<Integer> result = new ArrayList<>();
         for (int j = 0; j <= 5; j++) {
             Vector3f adjPos = getAdjacentPos(j);
-            if (solidMap.get(adjPos) == null && fluidMap.get(adjPos) == null) {
+            if (!LevelContainer.ALL_SOLID_POS.contains(adjPos) && !LevelContainer.ALL_FLUID_POS.contains(adjPos)) {
                 result.add(j);
             }
         }
@@ -551,58 +611,51 @@ public class Block extends Model {
 
     public static boolean intersectsRay(Vector3f blockPos, Vector3f l, Vector3f l0) {
         boolean ints = false;
-        Vector3f[] vertices = {
-            // front
-            new Vector3f(-1.0f, -1.0f, 1.0f),
-            new Vector3f(1.0f, -1.0f, 1.0f),
-            new Vector3f(1.0f, 1.0f, 1.0f),
-            new Vector3f(-1.0f, 1.0f, 1.0f),
-            // back
-            new Vector3f(-1.0f, -1.0f, -1.0f),
-            new Vector3f(1.0f, -1.0f, -1.0f),
-            new Vector3f(1.0f, 1.0f, -1.0f),
-            new Vector3f(-1.0f, 1.0f, -1.0f)
-        };
-        int indices[] = {
-            // front
-            0, 1, 2,
-            2, 3, 0,
-            // right
-            1, 5, 6,
-            6, 2, 1,
-            // back
-            7, 6, 5,
-            5, 4, 7,
-            // left
-            4, 0, 3,
-            3, 7, 4,
-            // bottom
-            4, 5, 1,
-            1, 0, 4,
-            // top
-            3, 2, 6,
-            6, 7, 3
-        };
-        for (int i = 0; i < indices.length; i += 3) {
-            Vector3f a = vertices[indices[i]];
-            Vector3f b = vertices[indices[i + 1]];
-            Vector3f c = vertices[indices[i + 2]];
-
-            Vector3f n = new Vector3f(); // normal of the plane
-            GeometryUtils.normal(a, b, c, n);
-
-            Vector3f temp = new Vector3f();
-            // we choose to use point a (we could used b or c too)
-            Vector3f x0 = a.add(blockPos, temp); // point on the plane translated
-            if (l.dot(n) != 0.0f) {
-                float d = x0.sub(l0).dot(n) / l.dot(n);
-                Vector3f x = l.mul(d, temp).add(l0, temp);
-                if (containsInsideEqually(blockPos, 2.0f, 2.0f, 2.0f, x)) {
-                    ints = true;
-                    break;
-                }
-            }
-        }
+        Vector3f temp1 = new Vector3f();
+        Vector3f min = blockPos.sub(1.0f, 1.0f, 1.0f, temp1);
+        Vector3f temp2 = new Vector3f();
+        Vector3f max = blockPos.add(1.0f, 1.0f, 1.0f, temp2);
+        Vector2f result = new Vector2f();
+        ints = Intersectionf.intersectRayAab(l0, l, min, max, result);
         return ints;
     }
+
+    public byte[] toByteArray() {
+        byte[] byteArray = new byte[29];
+        int offset = 0;
+        byte[] texNameArr = texName.getBytes();
+        System.arraycopy(texNameArr, 0, byteArray, offset, 5);
+        offset += 5;
+        byte[] solidPos = Vector3fUtils.vec3fToByteArray(pos);
+        System.arraycopy(solidPos, 0, byteArray, offset, solidPos.length); // 12 B
+        offset += solidPos.length;
+        byte[] solidCol = Vector3fUtils.vec3fToByteArray(primaryColor);
+        System.arraycopy(solidCol, 0, byteArray, offset, solidCol.length); // 12 B
+        offset += solidCol.length;
+        return byteArray;
+    }
+
+    public static Block fromByteArray(byte[] byteArray, boolean solid) {
+        int offset = 0;
+        char[] texNameArr = new char[5];
+        for (int k = 0; k < texNameArr.length; k++) {
+            texNameArr[k] = (char) byteArray[offset++];
+        }
+        String texName = String.valueOf(texNameArr);
+
+        byte[] blockPosArr = new byte[12];
+        System.arraycopy(byteArray, offset, blockPosArr, 0, blockPosArr.length);
+        Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
+        offset += blockPosArr.length;
+
+        byte[] blockPosCol = new byte[12];
+        System.arraycopy(byteArray, offset, blockPosCol, 0, blockPosCol.length);
+        Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
+        offset += blockPosCol.length;
+
+        Block block = new Block(false, texName, blockPos, blockCol, solid);
+
+        return block;
+    }
+
 }

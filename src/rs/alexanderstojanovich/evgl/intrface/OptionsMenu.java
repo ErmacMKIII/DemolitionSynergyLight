@@ -53,7 +53,7 @@ public abstract class OptionsMenu extends Menu {
         for (int i = 0; i < values.length; i++) {
             values[i] = new Text(myWindow, Texture.FONT, "");
             values[i].getQuad().getPos().x = items.get(i).getQuad().getPos().x;
-            values[i].getQuad().getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).getQuad().getRelativeWidth();
+            values[i].getQuad().getPos().x += (items.get(i).getContent().length() + 1) * items.get(i).getQuad().giveRelativeWidth();
             values[i].getQuad().getPos().y = items.get(i).getQuad().getPos().y;
         }
     }
@@ -147,26 +147,25 @@ public abstract class OptionsMenu extends Menu {
             refreshValues();
             int longest = longestWord();
             title.getQuad().getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
-                    * title.getQuad().getRelativeWidth() * itemScale + pos.x;
-            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().getRelativeHeight() * itemScale + pos.y;
+                    * title.getQuad().giveRelativeWidth() * itemScale + pos.x;
+            title.getQuad().getPos().y = Text.LINE_SPACING * title.getQuad().giveRelativeHeight() * itemScale + pos.y;
             title.render();
             int index = 0;
             for (Text item : items) {
-                Quad itemQuad = item.getQuad();
                 int itemDiff = longest - item.getContent().length();
-                itemQuad.getPos().x = (alignmentAmount * itemDiff - longest / 2) * itemQuad.getRelativeWidth() * itemScale + pos.x;
-                itemQuad.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * itemQuad.getRelativeHeight() + pos.y;
-
+                item.getQuad().getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.getQuad().giveRelativeWidth() * itemScale + pos.x;
+                item.getQuad().getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.getQuad().giveRelativeHeight() + pos.y;
                 item.render();
                 values[index].getQuad().getPos().x = item.getQuad().getPos().x;
-                values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().getRelativeWidth() * itemScale;
+                values[index].getQuad().getPos().x += (item.getContent().length() + 1) * item.getQuad().giveRelativeWidth() * itemScale;
                 values[index].getQuad().getPos().y = item.getQuad().getPos().y;
                 values[index].render();
                 index++;
             }
             iterator.getPos().x = items.get(selected).getQuad().getPos().x;
-            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().getRelativeWidth() * itemScale;
+            iterator.getPos().x -= 2.0f * items.get(selected).getQuad().giveRelativeWidth() * itemScale;
             iterator.getPos().y = items.get(selected).getQuad().getPos().y;
+            iterator.setColor(items.get(selected).getQuad().getColor());
             if (!iterator.isBuffered()) {
                 iterator.buffer();
             }

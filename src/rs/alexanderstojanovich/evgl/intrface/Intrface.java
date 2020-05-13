@@ -20,7 +20,6 @@ import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.glfw.GLFW;
 import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.Combo;
@@ -31,6 +30,8 @@ import rs.alexanderstojanovich.evgl.level.Editor;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.Game.Mode;
+import rs.alexanderstojanovich.evgl.main.GameObject;
+import rs.alexanderstojanovich.evgl.main.Main;
 import rs.alexanderstojanovich.evgl.main.Renderer;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
@@ -42,10 +43,10 @@ import rs.alexanderstojanovich.evgl.util.PlainTextReader;
  */
 public class Intrface {
 
-    private final Window myWindow;
+    private final GameObject gameObject;
 
     private Quad crosshair;
-    private Text updText; // displays update
+    private Text updText; // displays updates
     private Text fpsText; // displays framerates
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
@@ -63,32 +64,26 @@ public class Intrface {
     private OptionsMenu optionsMenu;
     private Menu editorMenu;
 
-    private final LevelContainer levelContainer;
-
-    public static final String FONT_IMG = "hack.png";
-
-    private final Object objMutex;
-
-    private final AudioPlayer musicPlayer;
-    private final AudioPlayer soundFXPlayer;
+    public static final String FONT_IMG = "font.png"; // modified Hack font
 
     private Console console;
 
-    public Intrface(Window myWindow, LevelContainer levelContainer, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
-        this.myWindow = myWindow;
-        this.levelContainer = levelContainer;
-        this.objMutex = objMutex;
-        this.musicPlayer = musicPlayer;
-        this.soundFXPlayer = soundFXPlayer;
+    public Intrface(GameObject gameObject) {
+        this.gameObject = gameObject;
         initIntrface();
     }
 
     private void initIntrface() {
+        Window myWindow = gameObject.getMyWindow();
+        LevelContainer levelContainer = gameObject.getLevelContainer();
+        AudioPlayer musicPlayer = gameObject.getMusicPlayer();
+        AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
+
         updText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
-        updText.quad.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        updText.getQuad().setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         updText.setOffset(new Vector2f(1.0f, 1.0f));
         fpsText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
-        fpsText.quad.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        fpsText.getQuad().setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         fpsText.setOffset(new Vector2f(1.0f, 1.0f));
 
         collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
@@ -131,7 +126,7 @@ public class Intrface {
                         optionsMenu.open();
                         break;
                     case "EXIT":
-                        GLFW.glfwSetWindowShouldClose(myWindow.getWindowID(), true);
+                        myWindow.close();
                         break;
                 }
             }
@@ -190,6 +185,7 @@ public class Intrface {
             protected boolean execute(String command) {
                 boolean ok = false;
                 if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                    Editor.deselect();
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
                 }
@@ -231,7 +227,7 @@ public class Intrface {
                 //--------------------------------------------------------------
                 if (getOptions()[1].giveCurrent() != null) {
                     String[] things = getOptions()[1].giveCurrent().toString().split("x");
-                    synchronized (objMutex) {
+                    synchronized (Main.OBJ_MUTEX) {
                         myWindow.loadContext();
                         GL.setCapabilities(MasterRenderer.getGlCaps());
                         myWindow.setResolution(Integer.parseInt(things[0]), Integer.parseInt(things[1]));
@@ -244,7 +240,7 @@ public class Intrface {
                 if (getOptions()[2].giveCurrent() != null) {
                     switch (getOptions()[2].giveCurrent().toString()) {
                         case "OFF":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.windowed();
                                 myWindow.centerTheWindow();
@@ -252,7 +248,7 @@ public class Intrface {
                             }
                             break;
                         case "ON":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.fullscreen();
                                 myWindow.centerTheWindow();
@@ -265,14 +261,14 @@ public class Intrface {
                 if (getOptions()[3].giveCurrent() != null) {
                     switch (getOptions()[3].giveCurrent().toString()) {
                         case "OFF":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.disableVSync();
                                 Window.unloadContext();
                             }
                             break;
                         case "ON":
-                            synchronized (objMutex) {
+                            synchronized (Main.OBJ_MUTEX) {
                                 myWindow.loadContext();
                                 myWindow.enableVSync();
                                 Window.unloadContext();
@@ -281,6 +277,7 @@ public class Intrface {
                     }
                 }
                 //--------------------------------------------------------------                
+                //--------------------------------------------------------------
                 if (getOptions()[4].giveCurrent() != null) {
                     Game.setMouseSensitivity(Float.parseFloat(getOptions()[4].giveCurrent().toString()));
                 }
@@ -350,7 +347,7 @@ public class Intrface {
         };
         editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
-        console = new Console(myWindow, objMutex, musicPlayer, soundFXPlayer);
+        console = new Console(myWindow, Main.OBJ_MUTEX, musicPlayer, soundFXPlayer);
     }
 
     public void setCollText(boolean mode) {
@@ -408,8 +405,8 @@ public class Intrface {
         editorMenu.update();
     }
 
-    public Window getMyWindow() {
-        return myWindow;
+    public GameObject getGameObject() {
+        return gameObject;
     }
 
     public Quad getCrosshair() {
@@ -430,6 +427,10 @@ public class Intrface {
 
     public Text getHelpText() {
         return helpText;
+    }
+
+    public Text getScreenText() {
+        return screenText;
     }
 
     public boolean isShowHelp() {
@@ -472,16 +473,8 @@ public class Intrface {
         return progText;
     }
 
-    public Object getObjMutex() {
-        return objMutex;
-    }
-
     public Text getGameModeText() {
         return gameModeText;
-    }
-
-    public Text getScreenText() {
-        return screenText;
     }
 
     public ConcurrentDialog getSinglePlayerDialog() {

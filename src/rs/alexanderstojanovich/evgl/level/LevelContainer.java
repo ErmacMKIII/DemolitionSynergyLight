@@ -21,24 +21,23 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
+import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.audio.AudioFile;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.Camera;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.critter.Critter;
+import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.models.Chunk;
 import rs.alexanderstojanovich.evgl.models.Chunks;
-import rs.alexanderstojanovich.evgl.models.Model;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
@@ -48,20 +47,22 @@ import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
  */
 public class LevelContainer implements GravityEnviroment {
 
-    private final Window myWindow;
-    public static final Block SKYBOX = new Block(true, Texture.NIGHT);
+    private final GameObject gameObject;
+
+    public static final Block SKYBOX = new Block(false, "night");
 
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
 
-    private List<Integer> visibleChunks = new GapList<>();
+    private List<Integer> visibleChunks = new ArrayList<>();
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float SKYBOX_SCALE = 256.0f * 256.0f * 256.0f; // default 16.7M
-    public static final float SKYBOX_WIDTH = 256.0f; // default 256
-    public static final Vector4f SKYBOX_COLOR = new Vector4f(0.25f, 0.5f, 0.75f, 1.0f); // cool bluish color for SKYBOX
+    public static final float BASE = 8.0f;
+    public static final float SKYBOX_SCALE = BASE * BASE * BASE;
+    public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
+    public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
 
     public static final int MAX_NUM_OF_SOLID_BLOCKS = 10000;
     public static final int MAX_NUM_OF_FLUID_BLOCKS = 10000;
@@ -73,19 +74,41 @@ public class LevelContainer implements GravityEnviroment {
     private final LevelActors levelActors = new LevelActors();
     private final RandomLevelGenerator randomLevelGenerator;
 
-    private final AudioPlayer musicPlayer;
-    private final AudioPlayer soundFXPlayer;
+    // position of all the solid blocks
+    public static final Set<Vector3f> ALL_SOLID_POS = new HashSet<>(MAX_NUM_OF_SOLID_BLOCKS);
+    // position of all the fluid blocks
+    public static final Set<Vector3f> ALL_FLUID_POS = new HashSet<>(MAX_NUM_OF_FLUID_BLOCKS);
 
-    public LevelContainer(Window myWindow, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
-        this.myWindow = myWindow;
-        this.randomLevelGenerator = new RandomLevelGenerator(this);
-        this.musicPlayer = musicPlayer;
-        this.soundFXPlayer = soundFXPlayer;
-        // setting SKYBOX        
+    static {
+        // setting SKYBOX     
         SKYBOX.setPrimaryColor(SKYBOX_COLOR);
-        SKYBOX.setUVsForSkybox();
+        SKYBOX.setUVsForSkybox(false);
         SKYBOX.setScale(SKYBOX_SCALE);
-        // setting observer        
+    }
+
+    public LevelContainer(GameObject gameObject) {
+        this.gameObject = gameObject;
+        this.randomLevelGenerator = new RandomLevelGenerator(this);
+    }
+
+    public static void printPositionSets() {
+        StringBuilder sb = new StringBuilder();
+        sb.append("\n");
+        sb.append("SOLID POSITION SET");
+        sb.append("(size = ").append(ALL_SOLID_POS.size()).append(")\n");
+        for (Vector3f solidPos : ALL_SOLID_POS) {
+            sb.append(solidPos);
+            sb.append("\n");
+        }
+        sb.append("---------------------------");
+        sb.append("FLUID POSITION SET");
+        sb.append("(size = ").append(ALL_FLUID_POS.size()).append(")\n");
+        for (Vector3f fluidPos : ALL_FLUID_POS) {
+            sb.append(fluidPos);
+            sb.append("\n");
+        }
+        sb.append("---------------------------");
+        DSLogger.reportInfo(sb.toString(), null);
     }
 
     public boolean startNewLevel() {
@@ -96,17 +119,17 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         progress = 0.0f;
         levelActors.freeze();
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        solidChunks.getPosMap().clear();
-        fluidChunks.getPosMap().clear();
+        ALL_SOLID_POS.clear();
+        ALL_FLUID_POS.clear();
 
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
-                Block entity = new Block(false, Texture.DOOM0);
+                Block entity = new Block(false, "doom0");
 
                 entity.getPos().x = 4.0f * i;
                 entity.getPos().y = 4.0f * j;
@@ -115,7 +138,6 @@ public class LevelContainer implements GravityEnviroment {
                 entity.getPrimaryColor().x = 0.5f * i + 0.25f;
                 entity.getPrimaryColor().y = 0.5f * j + 0.25f;
                 entity.getPrimaryColor().z = 0.0f;
-                entity.getPrimaryColor().w = 1.0f;
 
                 solidChunks.addBlock(entity);
 
@@ -123,8 +145,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        solidChunks.setBuffered(false);
-        fluidChunks.setBuffered(false);
+        solidChunks.saveAllToMemory();
 
         levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -3.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
@@ -137,7 +158,7 @@ public class LevelContainer implements GravityEnviroment {
         progress = 100.0f;
         working = false;
         success = true;
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -149,27 +170,27 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.freeze();
         boolean success = false;
         progress = 0.0f;
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
 
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        solidChunks.getPosMap().clear();
-        fluidChunks.getPosMap().clear();
+        ALL_SOLID_POS.clear();
+        ALL_FLUID_POS.clear();
+
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
             randomLevelGenerator.generate();
             success = true;
         }
 
-        solidChunks.setBuffered(false);
-        fluidChunks.updateFluids();
-        fluidChunks.setBuffered(false);
+        solidChunks.saveAllToMemory();
+        fluidChunks.saveAllToMemory();
 
         progress = 100.0f;
         working = false;
         levelActors.unfreeze();
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -181,7 +202,7 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         buffer[0] = 'D';
         buffer[1] = 'S';
@@ -213,27 +234,20 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (solidNum);
         buffer[pos++] = (byte) (solidNum >> 8);
 
+        solidChunks.loadAllFromMemory();
         List<Block> solidBlocks = solidChunks.getTotalList();
+
+        fluidChunks.loadAllFromMemory();
         List<Block> fluidBlocks = fluidChunks.getTotalList();
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
-            if (myWindow.shouldClose()) {
+            if (gameObject.getMyWindow().shouldClose()) {
                 break;
             }
-
-            byte[] texName = solidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
-            System.arraycopy(texName, 0, buffer, pos, 5);
-            pos += 5;
-            byte[] solidPos = Vector3fUtils.vec3fToByteArray(solidBlock.getPos());
-            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
-            pos += solidPos.length;
-            Vector4f primCol = solidBlock.getPrimaryColor();
-            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
-            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
-            pos += solidCol.length;
-
+            byte[] byteArraySolid = solidBlock.toByteArray();
+            System.arraycopy(byteArraySolid, 0, buffer, pos, 29);
+            pos += 29;
             progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
         }
 
@@ -248,23 +262,13 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (fluidNum >> 8);
 
         for (Block fluidBlock : fluidBlocks) {
-            if (myWindow.shouldClose()) {
+            if (gameObject.getMyWindow().shouldClose()) {
                 break;
             }
-
-            byte[] texName = fluidBlock.getPrimaryTexture().getImage().getFileName().getBytes();
-            System.arraycopy(texName, 0, buffer, pos, 5);
-            pos += 5;
-            byte[] solidPos = Vector3fUtils.vec3fToByteArray(fluidBlock.getPos());
-            System.arraycopy(solidPos, 0, buffer, pos, solidPos.length);
-            pos += solidPos.length;
-            Vector4f primCol = fluidBlock.getPrimaryColor();
-            Vector3f col = new Vector3f(primCol.x, primCol.y, primCol.z);
-            byte[] solidCol = Vector3fUtils.vec3fToByteArray(col);
-            System.arraycopy(solidCol, 0, buffer, pos, solidCol.length);
-            pos += solidCol.length;
-
-            progress += 100.0f / (solidBlocks.size() + fluidBlocks.size());
+            byte[] byteArrayFluid = fluidBlock.toByteArray();
+            System.arraycopy(byteArrayFluid, 0, buffer, pos, 29);
+            pos += 29;
+            progress += 100.0f / (fluidBlocks.size() + fluidBlocks.size());
         }
 
         buffer[pos++] = 'E';
@@ -274,11 +278,11 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
 
-        if (progress == 100.0f && !myWindow.shouldClose()) {
+        if (progress == 100.0f && !gameObject.getMyWindow().shouldClose()) {
             success = true;
         }
         working = false;
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -290,14 +294,14 @@ public class LevelContainer implements GravityEnviroment {
         }
         progress = 0.0f;
         levelActors.freeze();
-        musicPlayer.play(AudioFile.INTERMISSION, true);
+        gameObject.getMusicPlayer().play(AudioFile.INTERMISSION, true);
         pos = 0;
         if (buffer[0] == 'D' && buffer[1] == 'S') {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            solidChunks.getPosMap().clear();
-            fluidChunks.getPosMap().clear();
+            ALL_SOLID_POS.clear();
+            ALL_FLUID_POS.clear();
 
             pos += 2;
             byte[] posArr = new byte[12];
@@ -336,82 +340,52 @@ public class LevelContainer implements GravityEnviroment {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum && !myWindow.shouldClose(); i++) {
-                    char[] texNameArr = new char[5];
-                    for (int k = 0; k < texNameArr.length; k++) {
-                        texNameArr[k] = (char) buffer[pos++];
-                    }
-                    String texName = String.valueOf(texNameArr);
-
-                    byte[] blockPosArr = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosArr, 0, blockPosArr.length);
-                    Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-                    pos += blockPosArr.length;
-
-                    byte[] blockPosCol = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosCol, 0, blockPosCol.length);
-                    Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-                    pos += blockPosCol.length;
-
-                    Vector4f primaryColor = new Vector4f(blockCol, 1.0f);
-
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, true);
-                    solidChunks.addBlock(block);
-
+                for (int i = 0; i < solidNum && !gameObject.getMyWindow().shouldClose(); i++) {
+                    byte[] byteArraySolid = new byte[29];
+                    System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
+                    Block solidBlock = Block.fromByteArray(byteArraySolid, true);
+                    solidChunks.addBlock(solidBlock);
+                    pos += 29;
                     progress += 50.0f / solidNum;
                 }
-                solidChunks.setBuffered(false);
-            }
+                solidChunks.saveAllToMemory();
 
-            char[] fluid = new char[5];
-            for (int i = 0; i < fluid.length; i++) {
-                fluid[i] = (char) buffer[pos++];
-            }
-            String strFluid = String.valueOf(fluid);
+                char[] fluid = new char[5];
+                for (int i = 0; i < fluid.length; i++) {
+                    fluid[i] = (char) buffer[pos++];
+                }
+                String strFluid = String.valueOf(fluid);
 
-            if (strFluid.equals("FLUID")) {
-                int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
-                pos += 2;
-                for (int i = 0; i < fluidNum && !myWindow.shouldClose(); i++) {
-                    char[] texNameArr = new char[5];
-                    for (int k = 0; k < texNameArr.length; k++) {
-                        texNameArr[k] = (char) buffer[pos++];
+                if (strFluid.equals("FLUID")) {
+                    int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
+                    pos += 2;
+                    for (int i = 0; i < fluidNum && !gameObject.getMyWindow().shouldClose(); i++) {
+                        byte[] byteArrayFluid = new byte[29];
+                        System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
+                        Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
+                        fluidChunks.addBlock(fluidBlock);
+                        pos += 29;
+                        progress += 50.0f / fluidNum;
                     }
-                    String texName = String.valueOf(texNameArr);
+                    fluidChunks.saveAllToMemory();
 
-                    byte[] blockPosArr = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosArr, 0, blockPosArr.length);
-                    Vector3f blockPos = Vector3fUtils.vec3fFromByteArray(blockPosArr);
-                    pos += blockPosArr.length;
-
-                    byte[] blockPosCol = new byte[12];
-                    System.arraycopy(buffer, pos, blockPosCol, 0, blockPosCol.length);
-                    Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-                    pos += blockPosCol.length;
-
-                    Vector4f primaryColor = new Vector4f(blockCol, 0.5f);
-
-                    Block block = new Block(false, Texture.TEX_MAP.get(texName), blockPos, primaryColor, false);
-                    fluidChunks.addBlock(block);
-
-                    progress += 50.0f / fluidNum;
+                    char[] end = new char[3];
+                    for (int i = 0; i < end.length; i++) {
+                        end[i] = (char) buffer[pos++];
+                    }
+                    String strEnd = String.valueOf(end);
+                    if (strEnd.equals("END")) {
+                        success = true;
+                    }
                 }
-                fluidChunks.updateFluids();
-                fluidChunks.setBuffered(false);
-                char[] end = new char[3];
-                for (int i = 0; i < end.length; i++) {
-                    end[i] = (char) buffer[pos++];
-                }
-                String strEnd = String.valueOf(end);
-                if (strEnd.equals("END")) {
-                    success = true;
-                }
+
             }
+
         }
         levelActors.unfreeze();
         progress = 100.0f;
         working = false;
-        musicPlayer.play(AudioFile.AMBIENT, true);
+        gameObject.getMusicPlayer().play(AudioFile.AMBIENT, true);
         return success;
     }
 
@@ -491,15 +465,18 @@ public class LevelContainer implements GravityEnviroment {
     public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
-        Chunk fluidChunk = fluidChunks.getChunk(Chunk.chunkFunc(obsCamPos));
-        if (fluidChunk != null) {
-            for (Block fluidBlock : fluidChunk.getBlocks().getBlockList()) {
-                if (fluidBlock.containsInsideEqually(obsCamPos)) {
+
+        int currChunkId = Chunk.chunkFunc(obsCamPos);
+        Chunk currFluidChunk = fluidChunks.getChunk(currChunkId);
+        if (currFluidChunk != null) {
+            for (Block fluidBLock : currFluidChunk.getBlocks().getBlockList()) {
+                if (fluidBLock.containsInsideEqually(obsCamPos)) {
                     yea = true;
                     break;
                 }
             }
         }
+
         return yea;
     }
 
@@ -508,41 +485,66 @@ public class LevelContainer implements GravityEnviroment {
         coll = (!SKYBOX.containsInsideExactly(critter.getPredictor())
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
-
-        for (Vector3f solidPos : solidChunks.getPosMap().keySet()) {
-            if (Model.containsInsideExactly(solidPos, 2.0f, 2.0f, 2.0f, critter.getPredictor())
-                    || Model.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                            critter.getModel().getHeight(), critter.getModel().getDepth(), solidPos, 2.0f, 2.0f, 2.0f)) {
-                coll = true;
-                break;
+        if (!coll) {
+            for (Vector3f vector : ALL_SOLID_POS) {
+                if (Block.containsInsideEqually(vector, 2.0f, 2.0f, 2.0f, critter.getPredictor())
+                        || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
+                                critter.getModel().getHeight(), critter.getModel().getDepth(), vector, 2.0f, 2.0f, 2.0f)) {
+                    coll = true;
+                    break;
+                }
             }
         }
-
         return coll;
     }
 
     // thats what gravity does, object fells down if they don't have support below it (sky or other object)
     @Override
     public void gravityDo(float deltaTime) {
-        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
-        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
-        for (Vector3f solidBlockPos : solidMap.keySet()) {
-            Vector3f bottom = new Vector3f(solidBlockPos);
-            bottom.y -= 1.0f;
-            boolean massBelow = false;
-            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
-                if (!solidBlockPos.equals(otherSolidBlockPos)
-                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
-                    massBelow = true;
-                    break;
+//        float value = (GRAVITY_CONSTANT * deltaTime * deltaTime) / 2.0f;
+//        Map<Vector3f, Integer> solidMap = solidChunks.getPosMap();
+//        for (Vector3f solidBlockPos : solidMap.keySet()) {
+//            Vector3f bottom = new Vector3f(solidBlockPos);
+//            bottom.y -= 1.0f;
+//            boolean massBelow = false;
+//            for (Vector3f otherSolidBlockPos : solidMap.keySet()) {
+//                if (!solidBlockPos.equals(otherSolidBlockPos)
+//                        && Block.containsOnXZEqually(otherSolidBlockPos, 2.0f, bottom)) {
+//                    massBelow = true;
+//                    break;
+//                }
+//            }
+//            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
+//            if (!massBelow && inSkybox) {
+//                solidBlockPos.y -= value;
+//            }
+//        }
+//        solidChunks.setBuffered(false);
+    }
+
+    private void patch() {
+        for (Chunk solidChunk : solidChunks.getChunkList()) {
+            if (solidChunk != null) {
+                solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
+                if (solidChunk.isVisible() && solidChunk.isCached()) {
+                    solidChunk.loadFromMemory();
+                } else if (!solidChunk.isVisible() && !solidChunk.isCached()) {
+                    solidChunk.saveToMemory();
                 }
             }
-            boolean inSkybox = LevelContainer.SKYBOX.containsInsideExactly(bottom);
-            if (!massBelow && inSkybox) {
-                solidBlockPos.y -= value;
+        }
+
+        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
+            if (fluidChunk != null) {
+                fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
+                if (fluidChunk.isVisible() && fluidChunk.isCached()) {
+                    fluidChunk.loadFromMemory();
+                    fluidChunks.updateFluids(fluidChunk, true);
+                } else if (!fluidChunk.isVisible() && !fluidChunk.isCached()) {
+                    fluidChunk.saveToMemory();
+                }
             }
         }
-        solidChunks.setBuffered(false);
     }
 
     public void update(float deltaTime) { // call it externally from the main thread 
@@ -553,51 +555,40 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
 
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
-        for (Integer i : visibleChunks) {
-            Chunk solidChunk = solidChunks.getChunk(i);
-            if (solidChunk != null) {
-                solidChunk.setVisible(visibleChunks.contains(i));
-            }
-            Chunk fluidChunk = fluidChunks.getChunk(i);
-            if (fluidChunk != null) {
-                fluidChunk.setVisible(visibleChunks.contains(i));
-                fluidChunk.getBlocks().setCameraInFluid(isCameraInFluid());
-            }
+        // determine current chunks where player is
+        int chunkId = Chunk.chunkFunc(obsCamera.getPos());
+        Chunk solidChunk = solidChunks.getChunk(chunkId);
+        Chunk fluidChunk = fluidChunks.getChunk(chunkId);
+
+        if (fluidChunk != null) {
+            fluidChunk.setCameraInFluid(isCameraInFluid());
+        }
+
+        // if they are not visible call patch
+        if (solidChunk != null && !solidChunk.isVisible()
+                || fluidChunk != null && !fluidChunk.isVisible()) {
+            // is list of estimated visible chunks (by the camera pos and front)
+            visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
+            patch();
         }
     }
 
     public void render() { // render for regular level rendering
-        levelActors.render();
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        // render SKYBOX
-        obsCamera.render(ShaderProgram.getMainShader());
-
-        SKYBOX.render(ShaderProgram.getMainShader());
-
-        Block editorNew = Editor.getSelectedNew();
-        if (editorNew != null) {
-            editorNew.setLight(obsCamera.getPos());
-            if (!editorNew.isBuffered()) {
-                editorNew.bufferAll();
-            }
-            editorNew.render(ShaderProgram.getMainShader());
+        levelActors.render();
+        if (!SKYBOX.isBuffered()) {
+            SKYBOX.bufferAll();
         }
-        // copy uniforms from main shader to voxel shader
-        ShaderProgram.getMainShader().bind();
-        obsCamera.updateViewMatrix(ShaderProgram.getMainShader());
-        obsCamera.updateCameraPosition(ShaderProgram.getMainShader());
-        obsCamera.updateCameraFront(ShaderProgram.getMainShader());
-        ShaderProgram.unbind();
+        SKYBOX.render(ShaderProgram.getMainShader());
 
         Predicate<Block> predicate = new Predicate<Block>() {
             @Override
             public boolean test(Block t) {
-                return (obsCamera.doesSee(t) && t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos()));
+                return (t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())
+                        && obsCamera.doesSee(t));
             }
         };
 
-        /// render blocks        
         for (Chunk solidChunk : solidChunks.getChunkList()) {
             if (solidChunk.isVisible() && !solidChunk.isBuffered()) {
                 solidChunk.bufferAll();
@@ -619,6 +610,32 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
+        Block editorNew = Editor.getSelectedNew();
+        if (editorNew != null) {
+            editorNew.setLight(obsCamera.getPos());
+            if (!editorNew.isBuffered()) {
+                editorNew.bufferAll();
+            }
+            editorNew.render(ShaderProgram.getMainShader());
+        }
+
+        Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
+        if (selectedNewWireFrame != null) {
+            selectedNewWireFrame.setLight(obsCamera.getPos());
+            if (!selectedNewWireFrame.isBuffered()) {
+                selectedNewWireFrame.bufferAll();
+            }
+            selectedNewWireFrame.render(ShaderProgram.getMainShader());
+        }
+
+        Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
+        if (selectedCurrFrame != null) {
+            selectedCurrFrame.setLight(obsCamera.getPos());
+            if (!selectedCurrFrame.isBuffered()) {
+                selectedCurrFrame.bufferAll();
+            }
+            selectedCurrFrame.render(ShaderProgram.getMainShader());
+        }
     }
 
     public boolean maxSolidReached() {
@@ -636,11 +653,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Window getMyWindow() {
-        return myWindow;
-    }
-
-    public Block getSKYBOX() {
-        return SKYBOX;
+        return gameObject.getMyWindow();
     }
 
     public float getProgress() {
@@ -667,6 +680,10 @@ public class LevelContainer implements GravityEnviroment {
         return randomLevelGenerator;
     }
 
+    public List<Integer> getVisibleChunks() {
+        return visibleChunks;
+    }
+
     public byte[] getBuffer() {
         return buffer;
     }
@@ -676,11 +693,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public AudioPlayer getMusicPlayer() {
-        return musicPlayer;
-    }
-
-    public AudioPlayer getSoundFXPlayer() {
-        return soundFXPlayer;
+        return gameObject.getMusicPlayer();
     }
 
     public LevelActors getLevelActors() {

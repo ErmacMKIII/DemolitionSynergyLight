@@ -16,13 +16,14 @@
  */
 package rs.alexanderstojanovich.evgl.models;
 
-import java.util.HashMap;
+import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
-import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.Tuple;
 
 /**
  *
@@ -37,66 +38,66 @@ public class Chunks {
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
 
-    //----------------Vector3f hash, Block hash---------------------------------
-    private final Map<Vector3f, Integer> posMap = new HashMap<>();
+    private static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
+        @Override
+        public int compare(Chunk o1, Chunk o2) {
+            if (o1.getId() > o2.getId()) {
+                return 1;
+            } else if (o1.getId() == o2.getId()) {
+                return 0;
+            } else {
+                return -1;
+            }
+        }
+    };
 
     // for both internal (Init) and external use (Editor)
     public void addBlock(Block block) {
-        posMap.put(block.getPos(), block.hashCode());
-
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
         if (chunk == null) {
-            chunk = new Chunk(chunkId);
+            chunk = new Chunk(chunkId, block.solid);
             chunkList.add(chunk);
+            chunkList.sort(COMPARATOR);
         }
 
-        chunk.getBlocks().getBlockList().add(block);
-        chunk.getBlocks().getBlockList().sort(Block.Y_AXIS_COMP);
+        chunk.addBlock(block);
     }
 
     // for removing blocks (Editor)
     public void removeBlock(Block block) {
-        posMap.remove(block.getPos());
-
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
         if (chunk != null) { // if chunk exists already                            
-            List<Block> blockList = chunk.getBlocks().getBlockList();
-            blockList.remove(block);
+            chunk.removeBlock(block);
             // if chunk is empty (with no tuples) -> remove it
-            if (blockList.isEmpty()) {
+            if (chunk.getBlocks().getBlockList().isEmpty()) {
                 chunkList.remove(chunk);
             }
         }
     }
 
-    public void updateFluids() { // call only for fluid blocks after adding
-        for (Block fluidBlock : getTotalList()) {
-            fluidBlock.enableAllFaces(false);
-            for (int j = 0; j <= 5; j++) { // j - face number
-                Integer hash = posMap.get(Block.getAdjacentPos(fluidBlock.getPos(), j));
-                if (hash != null) {
-                    fluidBlock.disableFace(j, false);
+    public void updateFluids(Chunk fluidChunk, boolean useTransfer) { // call only for fluid blocks after adding
+        if (!fluidChunk.isSolid()) {
+            for (Block fluidBlock : fluidChunk.getBlocks().getBlockList()) {
+                for (int j = 0; j <= 5; j++) { // j - face number
+                    if (LevelContainer.ALL_FLUID_POS.contains(Block.getAdjacentPos(fluidBlock.getPos(), j))) {
+                        fluidBlock.disableFace(j, false);
+                    }
                 }
             }
+            fluidChunk.setBuffered(false);
         }
-    }
-
-    public void bufferAll() {
-        for (Chunk chunk : chunkList) {
-            chunk.bufferAll();
-        }
-        buffered = true;
     }
 
     public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
         Chunk result = null;
         for (Chunk chunk : chunkList) {
-            if (chunk.getId() == chunkId) {
+            if (chunk.isCached() && chunk.getMemory()[0] == chunkId
+                    || !chunk.isCached() && chunk.getId() == chunkId) {
                 result = chunk;
                 break;
             }
@@ -105,8 +106,10 @@ public class Chunks {
     }
 
     public void animate() { // call only for fluid blocks
-        for (Chunk chunk : getVisibleChunks()) {
-            chunk.animate();
+        for (Chunk chunk : getChunkList()) {
+            if (!chunk.isCached() && chunk.isBuffered()) {
+                chunk.animate();
+            }
         }
     }
 
@@ -116,20 +119,42 @@ public class Chunks {
         }
     }
 
-    // for each rendering
+    // for each instanced rendering
+    @Deprecated
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered) {
-            for (Chunk chunk : getVisibleChunks()) {
-                chunk.render(shaderProgram, lightSrc);
+        for (Chunk chunk : chunkList) {
+            chunk.render(shaderProgram, lightSrc);
+        }
+    }
+
+    // very useful -> it should be like this initially
+    public void saveAllToMemory() {
+        for (Chunk chunk : chunkList) {
+            chunk.saveToMemory();
+        }
+    }
+
+    // variation on the topic
+    public void saveInvisibleToMemory() {
+        for (Chunk chunk : chunkList) {
+            if (!chunk.isVisible()) {
+                chunk.saveToMemory();
             }
         }
     }
 
-    // for each rendering with predicate
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (buffered) {
-            for (Chunk chunk : getVisibleChunks()) {
-                chunk.renderIf(shaderProgram, lightSrc, predicate);
+    // useful when saving and wanna load everything into memory
+    public void loadAllFromMemory() {
+        for (Chunk chunk : chunkList) {
+            chunk.loadFromMemory();
+        }
+    }
+
+    // variation on the topic
+    public void loadVisibleToMemory() {
+        for (Chunk chunk : chunkList) {
+            if (chunk.isVisible()) {
+                chunk.loadFromMemory();
             }
         }
     }
@@ -152,21 +177,23 @@ public class Chunks {
         return result;
     }
 
-    public List<Chunk> getVisibleChunks() {
-        List<Chunk> result = new GapList<>();
+    public void printInfo() { // for debugging purposes
+        StringBuilder sb = new StringBuilder();
+        sb.append("CHUNKS\n");
+        sb.append("CHUNKS TOTAL SIZE = ").append(totalSize()).append("\n");
+        sb.append("NUMBER OF CHUNKS = ").append(chunkList.size()).append("\n");
+        sb.append("DETAILED INFO\n");
         for (Chunk chunk : chunkList) {
-            result.add(chunk);
+            sb.append("id = ").append(chunk.getId())
+                    .append(" | solid = ").append(chunk.isSolid())
+                    .append(" | size = ").append(chunk.size())
+                    .append(" | visible = ").append(chunk.isVisible())
+                    .append(" | buffered = ").append(chunk.isBuffered())
+                    .append(" | cached = ").append(chunk.isCached())
+                    .append("\n");
         }
-        return result;
-    }
-
-    // all blocks from all the chunks in one big list
-    public List<Block> getTotalVisibleList() {
-        List<Block> result = new GapList<>();
-        for (Chunk chunk : getVisibleChunks()) {
-            result.addAll(chunk.getBlocks().getBlockList());
-        }
-        return result;
+        sb.append("------------------------------------------------------------");
+        DSLogger.reportInfo(sb.toString(), null);
     }
 
     public List<Chunk> getChunkList() {
@@ -179,19 +206,16 @@ public class Chunks {
 
     public void setBuffered(boolean buffered) {
         this.buffered = buffered;
-        for (Chunk chunk : getVisibleChunks()) {
+        for (Chunk chunk : getChunkList()) {
             chunk.setBuffered(buffered);
         }
     }
 
+    @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
-        for (Chunk chunk : getVisibleChunks()) {
+        for (Chunk chunk : chunkList) {
             chunk.getBlocks().setCameraInFluid(cameraInFluid);
         }
-    }
-
-    public Map<Vector3f, Integer> getPosMap() {
-        return posMap;
     }
 
 }

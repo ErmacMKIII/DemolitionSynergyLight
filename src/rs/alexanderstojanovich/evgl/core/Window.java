@@ -18,7 +18,6 @@ package rs.alexanderstojanovich.evgl.core;
 
 import java.awt.image.BufferedImage;
 import java.nio.ByteBuffer;
-import rs.alexanderstojanovich.evgl.texture.Image;
 import java.util.ArrayList;
 import java.util.Arrays;
 import org.lwjgl.BufferUtils;
@@ -28,6 +27,7 @@ import org.lwjgl.glfw.GLFWVidMode;
 import org.lwjgl.glfw.GLFWVidMode.Buffer;
 import org.lwjgl.opengl.GL11;
 import rs.alexanderstojanovich.evgl.main.Game;
+import rs.alexanderstojanovich.evgl.texture.Image;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 
 /**
@@ -185,6 +185,7 @@ public class Window {
         GLFW.glfwSetWindowShouldClose(windowID, true);
     }
 
+    // save screenshot in the memory (BufferedImage)
     public BufferedImage getScreen() {
         final int rgba = 4;
 
