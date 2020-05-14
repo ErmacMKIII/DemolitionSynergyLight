@@ -27,13 +27,13 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
  * @author Coa
  */
 public class Main {
-    
+
     public static final String TITLE = "Demolition Synergy - v18 STONEWALL LSV";
-    
+
     public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
 
     public static final ExecutorService SERVICE = Executors.newSingleThreadExecutor();
-    
+
     public static void main(String[] args) {
         Configuration inCfg = new Configuration(); // makes default configuration
         inCfg.readConfigFile(); // this line reads if input file exists otherwise uses defaults

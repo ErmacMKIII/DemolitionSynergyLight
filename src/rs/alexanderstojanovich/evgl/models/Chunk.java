@@ -16,29 +16,14 @@
  */
 package rs.alexanderstojanovich.evgl.models;
 
-import java.nio.FloatBuffer;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.Intersectionf;
-import org.joml.Matrix4f;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.joml.Vector4f;
-import org.lwjgl.BufferUtils;
-import org.lwjgl.opengl.GL11;
-import org.lwjgl.opengl.GL15;
-import org.lwjgl.opengl.GL20;
-import org.lwjgl.opengl.GL32;
-import org.lwjgl.opengl.GL33;
-import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
-import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evgl.texture.Texture;
-import rs.alexanderstojanovich.evgl.util.Tuple;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
