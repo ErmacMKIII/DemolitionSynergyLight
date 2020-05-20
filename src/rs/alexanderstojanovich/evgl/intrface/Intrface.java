@@ -18,20 +18,14 @@ package rs.alexanderstojanovich.evgl.intrface;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
-import org.lwjgl.opengl.GL;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
-import rs.alexanderstojanovich.evgl.core.Combo;
-import rs.alexanderstojanovich.evgl.core.MasterRenderer;
-import rs.alexanderstojanovich.evgl.core.PerspectiveRenderer;
-import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.level.Editor;
-import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.Game.Mode;
 import rs.alexanderstojanovich.evgl.main.GameObject;
-import rs.alexanderstojanovich.evgl.main.Main;
 import rs.alexanderstojanovich.evgl.main.Renderer;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
@@ -66,7 +60,7 @@ public class Intrface {
 
     public static final String FONT_IMG = "font.png"; // modified Hack font
 
-    private Console console;
+    private final Console console = new Console();
 
     public Intrface(GameObject gameObject) {
         this.gameObject = gameObject;
@@ -74,39 +68,37 @@ public class Intrface {
     }
 
     private void initIntrface() {
-        Window myWindow = gameObject.getMyWindow();
-        LevelContainer levelContainer = gameObject.getLevelContainer();
         AudioPlayer musicPlayer = gameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
-        updText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
+        updText = new Text(Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
         updText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         updText.setOffset(new Vector2f(1.0f, 1.0f));
-        fpsText = new Text(myWindow, Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
+        fpsText = new Text(Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
         fpsText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
         fpsText.setOffset(new Vector2f(1.0f, 1.0f));
 
-        collText = new Text(myWindow, Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
+        collText = new Text(Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
         collText.setOffset(new Vector2f(1.0f, -1.0f));
-        helpText = new Text(myWindow, Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
+        helpText = new Text(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
         helpText.setOffset(new Vector2f(1.0f, 1.0f));
         helpText.setScale(0.625f);
         helpText.setEnabled(false);
-        progText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
+        progText = new Text(Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
         progText.setOffset(new Vector2f(1.0f, -1.0f));
-        screenText = new Text(myWindow, Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
+        screenText = new Text(Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
         screenText.setOffset(new Vector2f(1.0f, 1.0f));
         screenText.setScale(0.625f);
-        gameModeText = new Text(myWindow, Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
+        gameModeText = new Text(Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
 
-        crosshair = new Quad(myWindow, 27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
+        crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         List<Pair<String, Boolean>> mainMenuPairs = new ArrayList<>();
         mainMenuPairs.add(new Pair<>("SINGLE PLAYER", true));
         mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
         mainMenuPairs.add(new Pair<>("EDITOR", true));
         mainMenuPairs.add(new Pair<>("OPTIONS", true));
         mainMenuPairs.add(new Pair<>("EXIT", true));
-        mainMenu = new Menu(myWindow, "", mainMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        mainMenu = new Menu("", mainMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
 
@@ -126,25 +118,25 @@ public class Intrface {
                         optionsMenu.open();
                         break;
                     case "EXIT":
-                        myWindow.close();
+                        GameObject.MY_WINDOW.close();
                         break;
                 }
             }
         };
-        Quad logo = new Quad(myWindow, 232, 100, Texture.LOGO);
+        Quad logo = new Quad(232, 100, Texture.LOGO);
         logo.getColor().x = 1.0f;
         logo.getColor().y = 0.7f;
         logo.getColor().z = 0.1f;
         mainMenu.setLogo(logo);
         mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
 
-        saveDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
+        saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = levelContainer.saveLevelToFile(command);
+                boolean ok = gameObject.saveLevelToFile(command);
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -152,13 +144,13 @@ public class Intrface {
             }
         };
 
-        loadDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
+        loadDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "LOAD LEVEL FROM FILE: ", "LEVEL LOADED SUCESSFULLY!", "LOADING LEVEL FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = levelContainer.loadLevelFromFile(command);
+                boolean ok = gameObject.loadLevelFromFile(command);
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -166,13 +158,13 @@ public class Intrface {
             }
         };
 
-        randLvlDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f),
-                "ENTER NUMBER OF BLOCKS (LIMIT 50000): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
+        randLvlDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
+                "ENTER NUMBER OF BLOCKS (LIMIT 131070): ", "LEVEL GENERATED SUCESSFULLY", "LEVEL GENERATION FAILED!") {
             @Override
             protected boolean execute(String command) {
                 Editor.deselect();
                 progText.enabled = true;
-                boolean ok = levelContainer.generateRandomLevel(Integer.valueOf(command));
+                boolean ok = gameObject.generateRandomLevel(Integer.valueOf(command));
                 if (ok) {
                     Game.setCurrentMode(Mode.EDITOR);
                 }
@@ -180,11 +172,11 @@ public class Intrface {
             }
         };
 
-        singlePlayerDialog = new ConcurrentDialog(myWindow, Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
+        singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
             @Override
             protected boolean execute(String command) {
                 boolean ok = false;
-                if (!levelContainer.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
+                if (!gameObject.isWorking() && (command.equalsIgnoreCase("yes") || command.equalsIgnoreCase("y"))) {
                     Editor.deselect();
                     Game.setCurrentMode(Mode.SINGLE_PLAYER);
                     ok = true;
@@ -201,98 +193,87 @@ public class Intrface {
         optionsMenuPairs.add(new Pair<>("MOUSE SENSITIVITY", true));
         optionsMenuPairs.add(new Pair<>("MUSIC VOLUME", true));
         optionsMenuPairs.add(new Pair<>("SOUND VOLUME", true));
-        optionsMenu = new OptionsMenu(myWindow, "OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        optionsMenu = new OptionsMenu("OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
             }
 
             @Override
-            protected void refreshValues() {
-                getValues()[0].setContent(String.valueOf(Game.getFpsMax()));
-                getValues()[1].setContent(String.valueOf(myWindow.getWidth()) + "x" + String.valueOf(myWindow.getHeight()));
-                getValues()[2].setContent(myWindow.isFullscreen() ? "ON" : "OFF");
-                getValues()[3].setContent(myWindow.isVsync() ? "ON" : "OFF");
-                getValues()[4].setContent(String.valueOf(Game.getMouseSensitivity()));
-                getValues()[5].setContent(String.valueOf(musicPlayer.getGain()));
-                getValues()[6].setContent(String.valueOf(soundFXPlayer.getGain()));
+            protected void getValues() {
+                options.get(0).getKey().setContent(String.valueOf(Game.getFpsMax()));
+                options.get(1).getKey().setContent(String.valueOf(GameObject.MY_WINDOW.getWidth()) + "x" + String.valueOf(GameObject.MY_WINDOW.getHeight()));
+                options.get(2).getKey().setContent(GameObject.MY_WINDOW.isFullscreen() ? "ON" : "OFF");
+                options.get(3).getKey().setContent(GameObject.MY_WINDOW.isVsync() ? "ON" : "OFF");
+                options.get(4).getKey().setContent(String.valueOf(Game.getMouseSensitivity()));
+                options.get(5).getKey().setContent(String.valueOf(musicPlayer.getGain()));
+                options.get(6).getKey().setContent(String.valueOf(soundFXPlayer.getGain()));
             }
 
             @Override
             protected void execute() {
-                if (getOptions()[0].giveCurrent() != null) {
-                    Game.setFpsMax((int) getOptions()[0].giveCurrent());
-                    Renderer.setFpsTicks(0.0);
-                }
-                //--------------------------------------------------------------
-                if (getOptions()[1].giveCurrent() != null) {
-                    String[] things = getOptions()[1].giveCurrent().toString().split("x");
-                    synchronized (Main.OBJ_MUTEX) {
-                        myWindow.loadContext();
-                        GL.setCapabilities(MasterRenderer.getGlCaps());
-                        myWindow.setResolution(Integer.parseInt(things[0]), Integer.parseInt(things[1]));
-                        PerspectiveRenderer.updatePerspective(myWindow);
-                        GL.setCapabilities(null);
-                        Window.unloadContext();
-                    }
-                }
-                //--------------------------------------------------------------
-                if (getOptions()[2].giveCurrent() != null) {
-                    switch (getOptions()[2].giveCurrent().toString()) {
-                        case "OFF":
-                            synchronized (Main.OBJ_MUTEX) {
-                                myWindow.loadContext();
-                                myWindow.windowed();
-                                myWindow.centerTheWindow();
-                                Window.unloadContext();
-                            }
-                            break;
-                        case "ON":
-                            synchronized (Main.OBJ_MUTEX) {
-                                myWindow.loadContext();
-                                myWindow.fullscreen();
-                                myWindow.centerTheWindow();
-                                Window.unloadContext();
-                            }
-                            break;
-                    }
-                }
-                //--------------------------------------------------------------
-                if (getOptions()[3].giveCurrent() != null) {
-                    switch (getOptions()[3].giveCurrent().toString()) {
-                        case "OFF":
-                            synchronized (Main.OBJ_MUTEX) {
-                                myWindow.loadContext();
-                                myWindow.disableVSync();
-                                Window.unloadContext();
-                            }
-                            break;
-                        case "ON":
-                            synchronized (Main.OBJ_MUTEX) {
-                                myWindow.loadContext();
-                                myWindow.enableVSync();
-                                Window.unloadContext();
-                            }
-                            break;
-                    }
-                }
-                //--------------------------------------------------------------                
-                //--------------------------------------------------------------
-                if (getOptions()[4].giveCurrent() != null) {
-                    Game.setMouseSensitivity(Float.parseFloat(getOptions()[4].giveCurrent().toString()));
-                }
-                //--------------------------------------------------------------
-                if (getOptions()[5].giveCurrent() != null) {
-                    musicPlayer.setGain(Float.parseFloat(getOptions()[5].giveCurrent().toString()));
-                }
-                //--------------------------------------------------------------
-                if (getOptions()[6].giveCurrent() != null) {
-                    soundFXPlayer.setGain(Float.parseFloat(getOptions()[6].giveCurrent().toString()));
+                Command command = Command.NOP;
+                switch (selected) {
+                    case 0:
+                        command = Command.FPS_MAX;
+                        command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        Command.execute(command);
+                        break;
+                    case 1:
+                        command = Command.RESOLUTION;
+                        String giveCurrent = (String) options.get(selected).getValue().giveCurrent();
+                        String things[] = giveCurrent.split("x");
+                        command.getArgs().add(Integer.parseInt(things[0]));
+                        command.getArgs().add(Integer.parseInt(things[1]));
+                        Command.execute(command);
+                        break;
+                    case 2:
+                        String fullscreen = (String) options.get(selected).getValue().giveCurrent();
+                        switch (fullscreen) {
+                            case "ON":
+                                command = Command.FULLSCREEN;
+                                break;
+                            case "OFF":
+                                command = Command.WINDOWED;
+                                break;
+                        }
+                        Command.execute(command);
+                        break;
+                    case 3:
+                        String vsync = (String) options.get(selected).getValue().giveCurrent();
+                        command = Command.VSYNC;
+                        switch (vsync) {
+                            case "ON":
+                                command.getArgs().add(true);
+                                break;
+                            case "OFF":
+                                command.getArgs().add(false);
+                                break;
+                        }
+                        FutureTask<Boolean> task = new FutureTask<Boolean>(command);
+                        Renderer.TASK_QUEUE.add(task);
+                        break;
+                    case 4:
+                        float msens = (float) options.get(selected).getValue().giveCurrent();
+                        command = Command.MOUSE_SENSITIVITY;
+                        command.getArgs().add(msens);
+                        Command.execute(command);
+                        break;
+                    case 5:
+                        command = Command.MUSIC_VOLUME;
+                        command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        Command.execute(command);
+                        break;
+                    case 6:
+                        command = Command.SOUND_VOLUME;
+                        command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        Command.execute(command);
+                        break;
                 }
             }
         };
         Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
-        Object[] resolutions = myWindow.giveAllResolutions();
+        Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
         Object[] swtch = {"OFF", "ON"};
         Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
         Object[] volume = new Float[21];
@@ -300,13 +281,14 @@ public class Intrface {
         for (float i = 0.0f; i < 1.05f; i += 0.05f) {
             volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
         }
-        optionsMenu.getOptions()[0] = new Combo(fpsCaps, 3);
-        optionsMenu.getOptions()[1] = new Combo(resolutions, 0);
-        optionsMenu.getOptions()[2] = new Combo(swtch, 0);
-        optionsMenu.getOptions()[3] = new Combo(swtch, 0);
-        optionsMenu.getOptions()[4] = new Combo(mouseSens, 4);
-        optionsMenu.getOptions()[5] = new Combo(volume, 4);
-        optionsMenu.getOptions()[6] = new Combo(volume, 4);
+
+        optionsMenu.options.get(0).getValue().fetchFromArray(fpsCaps, 3);
+        optionsMenu.options.get(1).getValue().fetchFromArray(resolutions, 0);
+        optionsMenu.options.get(2).getValue().fetchFromArray(swtch, 0);
+        optionsMenu.options.get(3).getValue().fetchFromArray(swtch, 0);
+        optionsMenu.options.get(4).getValue().fetchFromArray(mouseSens, 1);
+        optionsMenu.options.get(5).getValue().fetchFromArray(volume, 10);
+        optionsMenu.options.get(6).getValue().fetchFromArray(volume, 10);
         optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
 
         List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();
@@ -315,7 +297,7 @@ public class Intrface {
         editorMenuPairs.add(new Pair<>("SAVE LEVEL TO FILE", true));
         editorMenuPairs.add(new Pair<>("LOAD LEVEL FROM FILE", true));
 
-        editorMenu = new Menu(myWindow, "EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        editorMenu = new Menu("EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -327,7 +309,7 @@ public class Intrface {
                 switch (s) {
                     case "START NEW LEVEL":
                         progText.setEnabled(true);
-                        levelContainer.startNewLevel();
+                        gameObject.startNewLevel();
                         Game.setCurrentMode(Mode.EDITOR);
                         break;
                     case "GENERATE RANDOM LEVEL":
@@ -346,8 +328,6 @@ public class Intrface {
             }
         };
         editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
-
-        console = new Console(myWindow, Main.OBJ_MUTEX, musicPlayer, soundFXPlayer);
     }
 
     public void setCollText(boolean mode) {

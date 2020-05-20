@@ -21,10 +21,11 @@ import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
@@ -54,7 +55,7 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks();
     private final Chunks fluidChunks = new Chunks();
 
-    private List<Integer> visibleChunks = new ArrayList<>();
+    private final Set<Integer> visibleChunks = new HashSet<>();
 
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
@@ -72,12 +73,60 @@ public class LevelContainer implements GravityEnviroment {
     private boolean working = false;
 
     private final LevelActors levelActors = new LevelActors();
-    private final RandomLevelGenerator randomLevelGenerator;
 
-    // position of all the solid blocks
-    public static final Set<Vector3f> ALL_SOLID_POS = new HashSet<>(MAX_NUM_OF_SOLID_BLOCKS);
-    // position of all the fluid blocks
-    public static final Set<Vector3f> ALL_FLUID_POS = new HashSet<>(MAX_NUM_OF_FLUID_BLOCKS);
+    // position of all the solid blocks to neighbors
+    public static final Map<Integer, Byte> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
+
+    // position of all the fluid blocks to neighbors
+    public static final Map<Integer, Byte> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
+
+    private static void determineSolid(Vector3f vector) {
+        byte bits = 0;
+        for (int j = 0; j <= 5; j++) {
+            int mask = 1 << j;
+            Vector3f adjPos = Block.getAdjacentPos(vector, j);
+            Byte value = ALL_SOLID_MAP.get(Vector3fUtils.hashCode(adjPos));
+            if (value != null) {
+                bits |= mask;
+            }
+        }
+        ALL_SOLID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
+    }
+
+    private static void determineFluid(Vector3f vector) {
+        byte bits = 0;
+        for (int j = 0; j <= 5; j++) {
+            int mask = 1 << j;
+            Vector3f adjPos = Block.getAdjacentPos(vector, j);
+            Byte value = ALL_FLUID_MAP.get(Vector3fUtils.hashCode(adjPos));
+            if (value != null) {
+                bits |= mask;
+            }
+        }
+        ALL_FLUID_MAP.replace(Vector3fUtils.hashCode(vector), bits);
+    }
+
+    public static void putBlock(Block block) {
+        Vector3f pos = block.getPos();
+        if (block.isSolid()) {
+            ALL_SOLID_MAP.put(Vector3fUtils.hashCode(pos), (byte) -1);
+            determineSolid(pos);
+        } else {
+            ALL_FLUID_MAP.put(Vector3fUtils.hashCode(pos), (byte) -1);
+            determineFluid(pos);
+        }
+    }
+
+    public static void removeBlock(Block block) {
+        Vector3f pos = block.getPos();
+        if (block.isSolid()) {
+            ALL_SOLID_MAP.remove(Vector3fUtils.hashCode(pos));
+            determineSolid(pos);
+        } else {
+            ALL_FLUID_MAP.remove(Vector3fUtils.hashCode(pos));
+            determineFluid(pos);
+        }
+    }
 
     static {
         // setting SKYBOX     
@@ -88,31 +137,25 @@ public class LevelContainer implements GravityEnviroment {
 
     public LevelContainer(GameObject gameObject) {
         this.gameObject = gameObject;
-        this.randomLevelGenerator = new RandomLevelGenerator(this);
     }
 
-    public static void printPositionSets() {
+    public static void printPositionMaps() {
         StringBuilder sb = new StringBuilder();
         sb.append("\n");
-        sb.append("SOLID POSITION SET");
-        sb.append("(size = ").append(ALL_SOLID_POS.size()).append(")\n");
-        for (Vector3f solidPos : ALL_SOLID_POS) {
-            sb.append(solidPos);
-            sb.append("\n");
-        }
+        sb.append("SOLID POSITION MAP");
+        sb.append("(size = ").append(ALL_SOLID_MAP.size()).append(")\n");
         sb.append("---------------------------");
-        sb.append("FLUID POSITION SET");
-        sb.append("(size = ").append(ALL_FLUID_POS.size()).append(")\n");
-        for (Vector3f fluidPos : ALL_FLUID_POS) {
-            sb.append(fluidPos);
-            sb.append("\n");
-        }
+        sb.append("\n");
+        sb.append("FLUID POSITION MAP");
+        sb.append("(size = ").append(ALL_FLUID_MAP.size()).append(")\n");
         sb.append("---------------------------");
         DSLogger.reportInfo(sb.toString(), null);
     }
 
+    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     public boolean startNewLevel() {
-        if (working || progress > 0.0f) {
+        if (working) {
             return false;
         }
         boolean success = false;
@@ -124,8 +167,8 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        ALL_SOLID_POS.clear();
-        ALL_FLUID_POS.clear();
+        ALL_SOLID_MAP.clear();
+        ALL_FLUID_MAP.clear();
 
         for (int i = 0; i <= 2; i++) {
             for (int j = 0; j <= 2; j++) {
@@ -162,8 +205,8 @@ public class LevelContainer implements GravityEnviroment {
         return success;
     }
 
-    public boolean generateRandomLevel(int numberOfBlocks) {
-        if (working || progress > 0.0f) {
+    public boolean generateRandomLevel(RandomLevelGenerator randomLevelGenerator, int numberOfBlocks) {
+        if (working) {
             return false;
         }
         working = true;
@@ -175,8 +218,8 @@ public class LevelContainer implements GravityEnviroment {
         solidChunks.getChunkList().clear();
         fluidChunks.getChunkList().clear();
 
-        ALL_SOLID_POS.clear();
-        ALL_FLUID_POS.clear();
+        ALL_SOLID_MAP.clear();
+        ALL_FLUID_MAP.clear();
 
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
             randomLevelGenerator.setNumberOfBlocks(numberOfBlocks);
@@ -242,7 +285,7 @@ public class LevelContainer implements GravityEnviroment {
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {
-            if (gameObject.getMyWindow().shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
             byte[] byteArraySolid = solidBlock.toByteArray();
@@ -262,7 +305,7 @@ public class LevelContainer implements GravityEnviroment {
         buffer[pos++] = (byte) (fluidNum >> 8);
 
         for (Block fluidBlock : fluidBlocks) {
-            if (gameObject.getMyWindow().shouldClose()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
                 break;
             }
             byte[] byteArrayFluid = fluidBlock.toByteArray();
@@ -278,7 +321,7 @@ public class LevelContainer implements GravityEnviroment {
         levelActors.unfreeze();
         progress = 100.0f;
 
-        if (progress == 100.0f && !gameObject.getMyWindow().shouldClose()) {
+        if (progress == 100.0f && !GameObject.MY_WINDOW.shouldClose()) {
             success = true;
         }
         working = false;
@@ -300,8 +343,8 @@ public class LevelContainer implements GravityEnviroment {
             solidChunks.getChunkList().clear();
             fluidChunks.getChunkList().clear();
 
-            ALL_SOLID_POS.clear();
-            ALL_FLUID_POS.clear();
+            ALL_SOLID_MAP.clear();
+            ALL_FLUID_MAP.clear();
 
             pos += 2;
             byte[] posArr = new byte[12];
@@ -340,7 +383,7 @@ public class LevelContainer implements GravityEnviroment {
             if (strSolid.equals("SOLID")) {
                 int solidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                 pos += 2;
-                for (int i = 0; i < solidNum && !gameObject.getMyWindow().shouldClose(); i++) {
+                for (int i = 0; i < solidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
                     byte[] byteArraySolid = new byte[29];
                     System.arraycopy(buffer, pos, byteArraySolid, 0, 29);
                     Block solidBlock = Block.fromByteArray(byteArraySolid, true);
@@ -359,7 +402,7 @@ public class LevelContainer implements GravityEnviroment {
                 if (strFluid.equals("FLUID")) {
                     int fluidNum = ((buffer[pos + 1] & 0xFF) << 8) | (buffer[pos] & 0xFF);
                     pos += 2;
-                    for (int i = 0; i < fluidNum && !gameObject.getMyWindow().shouldClose(); i++) {
+                    for (int i = 0; i < fluidNum && !GameObject.MY_WINDOW.shouldClose(); i++) {
                         byte[] byteArrayFluid = new byte[29];
                         System.arraycopy(buffer, pos, byteArrayFluid, 0, 29);
                         Block fluidBlock = Block.fromByteArray(byteArrayFluid, false);
@@ -390,7 +433,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public boolean saveLevelToFile(String filename) {
-        if (working || progress > 0.0f) {
+        if (working) {
             return false;
         }
         boolean success = false;
@@ -423,7 +466,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public boolean loadLevelFromFile(String filename) {
-        if (working || progress > 0.0f) {
+        if (working) {
             return false;
         }
         boolean success = false;
@@ -459,7 +502,9 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public void animate() {
-        fluidChunks.animate();
+        if (!working) {
+            fluidChunks.animate();
+        }
     }
 
     public boolean isCameraInFluid() {
@@ -486,12 +531,18 @@ public class LevelContainer implements GravityEnviroment {
                 || !SKYBOX.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
                         critter.getModel().getHeight(), critter.getModel().getDepth()));
         if (!coll) {
-            for (Vector3f vector : ALL_SOLID_POS) {
-                if (Block.containsInsideEqually(vector, 2.0f, 2.0f, 2.0f, critter.getPredictor())
-                        || Block.intersectsEqually(critter.getPredictor(), critter.getModel().getWidth(),
-                                critter.getModel().getHeight(), critter.getModel().getDepth(), vector, 2.0f, 2.0f, 2.0f)) {
-                    coll = true;
-                    break;
+            OUTER:
+            for (Integer i : visibleChunks) {
+                Chunk solidChunk = solidChunks.getChunk(i);
+                if (solidChunk != null) {
+                    for (Block solidBlock : solidChunk.getBlocks().getBlockList()) {
+                        if (solidBlock.containsInsideEqually(critter.getPredictor())
+                                || solidBlock.intersectsExactly(critter.getPredictor(), critter.getModel().getWidth(),
+                                        critter.getModel().getHeight(), critter.getModel().getDepth())) {
+                            coll = true;
+                            break OUTER;
+                        }
+                    }
                 }
             }
         }
@@ -522,9 +573,12 @@ public class LevelContainer implements GravityEnviroment {
 //        solidChunks.setBuffered(false);
     }
 
-    private void patch() {
-        for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (solidChunk != null) {
+    public void patch() {
+        if (!working) {
+            Camera obsCamera = levelActors.getPlayer().getCamera();
+            Chunk.determineVisible(visibleChunks, obsCamera.getPos(), obsCamera.getFront());
+
+            for (Chunk solidChunk : solidChunks.getChunkList()) {
                 solidChunk.setVisible(visibleChunks.contains(solidChunk.getId()));
                 if (solidChunk.isVisible() && solidChunk.isCached()) {
                     solidChunk.loadFromMemory();
@@ -532,10 +586,8 @@ public class LevelContainer implements GravityEnviroment {
                     solidChunk.saveToMemory();
                 }
             }
-        }
 
-        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (fluidChunk != null) {
+            for (Chunk fluidChunk : fluidChunks.getChunkList()) {
                 fluidChunk.setVisible(visibleChunks.contains(fluidChunk.getId()));
                 if (fluidChunk.isVisible() && fluidChunk.isCached()) {
                     fluidChunk.loadFromMemory();
@@ -547,32 +599,22 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public void update(float deltaTime) { // call it externally from the main thread 
-        if (working || progress > 0.0f || levelActors.getPlayer() == null) {
-            return; // don't update if working, it may screw up!
-        }
-
-        SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
-
-        Camera obsCamera = levelActors.getPlayer().getCamera();
-        // determine current chunks where player is
-        int chunkId = Chunk.chunkFunc(obsCamera.getPos());
-        Chunk solidChunk = solidChunks.getChunk(chunkId);
-        Chunk fluidChunk = fluidChunks.getChunk(chunkId);
-
-        if (fluidChunk != null) {
-            fluidChunk.setCameraInFluid(isCameraInFluid());
-        }
-
-        // if they are not visible call patch
-        if (solidChunk != null && !solidChunk.isVisible()
-                || fluidChunk != null && !fluidChunk.isVisible()) {
-            // is list of estimated visible chunks (by the camera pos and front)
-            visibleChunks = Chunk.determineVisible(obsCamera.getPos(), obsCamera.getFront());
-            patch();
+        if (!working) { // don't update if working, it may screw up!
+            SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 64.0f);
+            Camera obsCamera = levelActors.getPlayer().getCamera();
+            // determine current chunks where player is
+            int chunkId = Chunk.chunkFunc(obsCamera.getPos());
+            Chunk fluidChunk = fluidChunks.getChunk(chunkId);
+            if (fluidChunk != null) {
+                fluidChunk.setCameraInFluid(isCameraInFluid());
+            }
         }
     }
 
     public void render() { // render for regular level rendering
+        if (working) {
+            return;
+        }
         Camera obsCamera = levelActors.getPlayer().getCamera();
         levelActors.render();
         if (!SKYBOX.isBuffered()) {
@@ -637,6 +679,8 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
+    // -------------------------------------------------------------------------
+    // -------------------------------------------------------------------------
     public boolean maxSolidReached() {
         return solidChunks.totalSize() == MAX_NUM_OF_SOLID_BLOCKS;
     }
@@ -652,7 +696,7 @@ public class LevelContainer implements GravityEnviroment {
     }
 
     public Window getMyWindow() {
-        return gameObject.getMyWindow();
+        return GameObject.MY_WINDOW;
     }
 
     public float getProgress() {
@@ -663,8 +707,8 @@ public class LevelContainer implements GravityEnviroment {
         this.progress = progress;
     }
 
-    public boolean isWorking() {
-        return working;
+    public boolean isWorking() { // damn this one!
+        return working || progress > 0.0f;
     }
 
     public Chunks getSolidChunks() {
@@ -675,11 +719,7 @@ public class LevelContainer implements GravityEnviroment {
         return fluidChunks;
     }
 
-    public RandomLevelGenerator getRandomLevelGenerator() {
-        return randomLevelGenerator;
-    }
-
-    public List<Integer> getVisibleChunks() {
+    public Set<Integer> getVisibleChunks() {
         return visibleChunks;
     }
 

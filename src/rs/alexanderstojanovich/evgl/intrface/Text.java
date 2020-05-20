@@ -22,6 +22,7 @@ import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.core.Window;
+import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
 
@@ -31,7 +32,6 @@ import rs.alexanderstojanovich.evgl.util.Pair;
  */
 public class Text {
 
-    protected Window myWindow;
     protected Texture texture;
     protected String content;
 
@@ -60,15 +60,13 @@ public class Text {
 
     protected boolean ignoreFactor = false;
 
-    public Text(Window window, Texture texture, String content) {
-        this.myWindow = window;
+    public Text(Texture texture, String content) {
         this.texture = texture;
         this.content = content;
         this.enabled = true;
     }
 
-    public Text(Window window, Texture texture, String content, Vector3f color, Vector2f pos) {
-        this.myWindow = window;
+    public Text(Texture texture, String content, Vector3f color, Vector2f pos) {
         this.texture = texture;
         this.content = content;
         this.color = color;
@@ -76,8 +74,7 @@ public class Text {
         this.enabled = true;
     }
 
-    public Text(Window window, Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
-        this.myWindow = window;
+    public Text(Texture texture, String content, Vector2f pos, int charWidth, int charHeight) {
         this.texture = texture;
         this.content = content;
         this.enabled = true;
@@ -103,7 +100,7 @@ public class Text {
 
                 pairList.add(new Pair<>(xinc, ydec));
 
-                Quad quad = new Quad(myWindow, charWidth, charHeight, texture);
+                Quad quad = new Quad(charWidth, charHeight, texture);
                 quad.setColor(color);
                 quad.setPos(pos);
                 quad.setScale(scale);
@@ -145,27 +142,23 @@ public class Text {
         }
     }
 
-    public float giveRelativeCharWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return charWidth * widthFactor / (float) myWindow.getWidth();
+    public float getRelativeCharWidth() {
+        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / Window.MIN_WIDTH;
+        return charWidth * widthFactor / (float) GameObject.MY_WINDOW.getWidth();
     }
 
-    public float giveRelativeWidth() {
-        float widthFactor = (ignoreFactor) ? 1.0f : myWindow.getWidth() / Window.MIN_WIDTH;
-        return charWidth * widthFactor * content.length() / (float) myWindow.getWidth();
+    public float getRelativeWidth() {
+        float widthFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getWidth() / Window.MIN_WIDTH;
+        return charWidth * widthFactor * content.length() / (float) GameObject.MY_WINDOW.getWidth();
     }
 
-    public float giveRelativeCharHeight() {
-        float heightFactor = (ignoreFactor) ? 1.0f : myWindow.getHeight() / Window.MIN_HEIGHT;
-        return charHeight * heightFactor / (float) myWindow.getHeight();
+    public float getRelativeCharHeight() {
+        float heightFactor = (ignoreFactor) ? 1.0f : GameObject.MY_WINDOW.getHeight() / Window.MIN_HEIGHT;
+        return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
     public Window getMyWindow() {
-        return myWindow;
-    }
-
-    public void setMyWindow(Window myWindow) {
-        this.myWindow = myWindow;
+        return GameObject.MY_WINDOW;
     }
 
     public Texture getTexture() {

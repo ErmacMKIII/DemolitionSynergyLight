@@ -33,7 +33,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     private boolean cameraInFluid = false;
     private boolean verticesReversed = false;
     // array with offsets in the big float buffer
-    // this is maximum amount of blocks of the type game can hold    
+    // this is maximum amount of blocks of the type game can hold
     private boolean buffered = false;
 
     public void bufferAll() { // buffer both, call it before any rendering

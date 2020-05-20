@@ -35,10 +35,10 @@ public class Configuration {
     private int height = 480;
     private boolean fullscreen = false;
     private boolean vsync = false;
-    private float mouseSensitivity = 3.0f;
+    private float mouseSensitivity = 1.5f;
     private boolean debug = false;
-    private float musicVolume = 1.0f;
-    private float soundFXVolume = 1.0f;
+    private float musicVolume = 0.5f;
+    private float soundFXVolume = 0.5f;
     private static final String CONFIG_PATH = "dsynergy_lsv.ini";
 
     // reads configuration from the .ini file

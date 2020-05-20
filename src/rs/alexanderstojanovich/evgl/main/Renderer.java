@@ -16,6 +16,10 @@
  */
 package rs.alexanderstojanovich.evgl.main;
 
+import java.util.ArrayDeque;
+import java.util.Queue;
+import java.util.concurrent.Executor;
+import java.util.concurrent.FutureTask;
 import org.lwjgl.glfw.GLFW;
 import rs.alexanderstojanovich.evgl.core.MasterRenderer;
 import rs.alexanderstojanovich.evgl.core.PerspectiveRenderer;
@@ -30,17 +34,22 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
  *
  * @author Coa
  */
-public class Renderer extends Thread {
+public class Renderer extends Thread implements Executor {
 
     private final GameObject gameObject;
 
     private boolean assertCollision = false;
 
     private static double fpsTicks = 0.0;
-    private int fps = 0;
+    private static int fps = 0;
 
     private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 10;
+    public static final int REN_MAX_PASSES = 5;
+
+    private int widthGL = Window.MIN_WIDTH;
+    private int heightGL = Window.MIN_HEIGHT;
+
+    public static final Queue<FutureTask<Boolean>> TASK_QUEUE = new ArrayDeque<>();
 
     public Renderer(GameObject gameObject) {
         super("Renderer");
@@ -49,9 +58,15 @@ public class Renderer extends Thread {
 
     @Override
     public void run() {
-        MasterRenderer.initGL(gameObject.getMyWindow()); // loads myWindow context, creates OpenGL context..
+        MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
+        boolean ok = GameObject.MY_WINDOW.setResolution(Main.CONFIG.getWidth(), Main.CONFIG.getHeight());
+        MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
+        GameObject.MY_WINDOW.centerTheWindow();
+        if (!ok) {
+            DSLogger.reportError("Game unable to set resolution!", null);
+        }
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
-        PerspectiveRenderer.updatePerspective(gameObject.getMyWindow()); // updates perspective for all the existing shaders
+        PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
 
         double timer0 = GLFW.glfwGetTime();
@@ -62,31 +77,38 @@ public class Renderer extends Thread {
         double currTime;
         double diff;
 
-        while (!gameObject.getMyWindow().shouldClose()) {
+        while (!GameObject.MY_WINDOW.shouldClose()) {
+            // changing resolution if necessary
+            int width = GameObject.MY_WINDOW.getWidth();
+            int height = GameObject.MY_WINDOW.getHeight();
+            if (width != widthGL
+                    || height != heightGL) {
+                MasterRenderer.setResolution(width, height);
+                PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW);
+                widthGL = width;
+                heightGL = height;
+            }
+
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += diff * Game.getFpsMax();
+            fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
             lastTime = currTime;
 
             // Detecting critical status
             if (fps == 0 && diff > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
-                gameObject.getMyWindow().close();
+                GameObject.MY_WINDOW.close();
                 break;
             }
 
             if (fpsTicks >= 1.0) {
-                synchronized (Main.OBJ_MUTEX) {
-                    gameObject.getMyWindow().loadContext();
-                    while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
-                        gameObject.render();
-                        fps++;
-                        fpsTicks--;
-                        renPasses++;
-                    }
-                    renPasses = 0;
-                    Window.unloadContext();
+                while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
+                    gameObject.render();
+                    fps++;
+                    fpsTicks--;
+                    renPasses++;
                 }
+                renPasses = 0;
             }
 
             // update text which shows ups and fps every second
@@ -123,24 +145,33 @@ public class Renderer extends Thread {
 
             // update text which animates water every quarter of the second
             if (GLFW.glfwGetTime() > timer2 + 0.25) {
-                if (gameObject.getLevelContainer().getProgress() == 100) {
+                if (gameObject.getLevelContainer().getProgress() == 100.0f) {
                     gameObject.getIntrface().getProgText().setEnabled(false);
-                    gameObject.getLevelContainer().setProgress(0);
+                    gameObject.getLevelContainer().setProgress(0.0f);
                 }
 
-                if (gameObject.getLevelContainer().getProgress() == 0.0f && !gameObject.getLevelContainer().isWorking()) {
+                if (!gameObject.isWorking()) {
                     if (Editor.getSelectedCurr() == null && Editor.getSelectedNew() == null) {
-                        synchronized (Main.OBJ_MUTEX) {
-                            gameObject.getMyWindow().loadContext();
-                            gameObject.animate();
-                            Window.unloadContext();
-                        }
+                        gameObject.animate();
                     }
                 }
                 timer2 += 0.25;
             }
+
+            // lastly it executes the console tasks
+            FutureTask<Boolean> task;
+            while ((task = TASK_QUEUE.poll()) != null) {
+                execute(task);
+            }
         }
 
+        // renderer is reaching end of life!
+        Window.unloadContext();
+    }
+
+    @Override
+    public void execute(Runnable command) {
+        command.run();
     }
 
     public LevelContainer getLevelContainer() {
@@ -163,8 +194,12 @@ public class Renderer extends Thread {
         Renderer.fpsTicks = fpsTicks;
     }
 
-    public int getFps() {
+    public static int getFps() {
         return fps;
+    }
+
+    public static void setFps(int fps) {
+        Renderer.fps = fps;
     }
 
     public static int getRenPasses() {

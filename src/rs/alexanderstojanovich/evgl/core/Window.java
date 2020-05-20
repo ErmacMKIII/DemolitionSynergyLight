@@ -149,7 +149,6 @@ public class Window {
                 this.width = width;
                 this.height = height;
                 GLFW.glfwSetWindowSize(windowID, width, height);
-                GL11.glViewport(0, 0, width, height);
                 success = true;
             }
         }

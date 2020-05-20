@@ -18,15 +18,20 @@ package rs.alexanderstojanovich.evgl.intrface;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
 import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
-import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.main.Game;
+import rs.alexanderstojanovich.evgl.main.GameObject;
+import rs.alexanderstojanovich.evgl.main.Renderer;
 import rs.alexanderstojanovich.evgl.texture.Texture;
+import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.Pair;
 
 /**
  *
@@ -34,35 +39,27 @@ import rs.alexanderstojanovich.evgl.texture.Texture;
  */
 public class Console {
 
-    private final Window myWindow;
     private final Quad panel;
     private final StringBuilder input = new StringBuilder();
     private final Text inText;
-    private final List<Text> history = new ArrayList<>();
+    private final List<Pair<Text, Quad>> history = new ArrayList<>();
     private boolean enabled = false;
-
-    private final Commands commands;
 
     public static final int HISTORY_CAPACITY = 12;
 
-    private final Object objMutex;
-
-    public Console(Window myWindow, Object objMutex, AudioPlayer musicPlayer, AudioPlayer soundFXPlayer) {
-        this.myWindow = myWindow;
-        this.objMutex = objMutex;
-        this.panel = new Quad(myWindow, myWindow.getWidth(), myWindow.getHeight() / 2, Texture.CONSOLE);
+    public Console() {
+        this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
+                GameObject.MY_WINDOW.getHeight() / 2, Texture.CONSOLE);
         this.panel.setColor(new Vector3f(0.25f, 0.5f, 0.75f));
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
-        this.inText = new Text(myWindow, Texture.FONT, "]_");
+        this.inText = new Text(Texture.FONT, "]_");
         this.inText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
-        this.inText.getPos().x = -1.0f;
-        this.inText.getPos().y = 0.5f - panel.getPos().y + inText.giveRelativeCharHeight() / 2.0f;
+        this.inText.pos.x = -1.0f;
+        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
 
         this.inText.setOffset(new Vector2f(1.0f, 0.0f));
-
-        this.commands = new Commands(myWindow, objMutex, musicPlayer, soundFXPlayer);
     }
 
     public void open() {
@@ -72,9 +69,9 @@ public class Console {
             inText.setContent("]_");
             inText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
 
-            GLFW.glfwSetInputMode(myWindow.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
-            GLFW.glfwSetCursorPosCallback(myWindow.getWindowID(), null);
-            GLFW.glfwSetKeyCallback(myWindow.getWindowID(), new GLFWKeyCallback() {
+            GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
+            GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
+            GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {
                 @Override
                 public void invoke(long window, int key, int scancode, int action, int mods) {
                     if ((key == GLFW.GLFW_KEY_ESCAPE || key == GLFW.GLFW_KEY_GRAVE_ACCENT) && action == GLFW.GLFW_PRESS) {
@@ -93,26 +90,45 @@ public class Console {
                     } else if (key == GLFW.GLFW_KEY_ENTER && action == GLFW.GLFW_PRESS) {
                         if (!input.toString().equals("")) {
 //                            for (Text item : history) {
-//                                item.getPos().y += item.getRelativeCharHeight() * Text.LINE_SPACING;
+//                                item.pos.y += item.getRelativeCharHeight() * Text.LINE_SPACING;
 //                            }
-                            Text text = new Text(myWindow, Texture.FONT, "");
-                            boolean execStatus = commands.execute(input.toString());
-                            if (execStatus) {
-                                text.setContent(input.toString());
-                                text.setColor(new Vector3f(1.0f, 1.0f, 1.0f));
-                            } else {
+                            Text text = new Text(Texture.FONT, "");
+                            Quad quad = new Quad(16, 16, Texture.LIGHT_BULB);
+                            Command command = Command.getCommand(input.toString());
+                            // if command is invalid it's null
+                            if (command == Command.ERROR) {
                                 text.setContent("Invalid Command!");
                                 text.setColor(new Vector3f(1.0f, 0.0f, 0.0f));
-                            }
-                            text.setPos(new Vector2f(inText.getPos()));
-                            text.getPos().y += text.giveRelativeCharHeight() * Text.LINE_SPACING;
-                            text.setOffset(new Vector2f(1.0f, 0.0f));
-                            history.add(0, text);
-
-                            synchronized (objMutex) {
-                                if (history.size() == HISTORY_CAPACITY) {
-                                    history.remove(history.size() - 1);
+                            } else if (command.isRendererCommand()) {
+                                boolean result = false;
+                                FutureTask<Boolean> consoleTask = new FutureTask<Boolean>(command);
+                                Renderer.TASK_QUEUE.add(consoleTask);
+                                try {
+                                    // waits for renderer to execute the task                       
+                                    result = consoleTask.get();
+                                } catch (InterruptedException | ExecutionException ex) {
+                                    DSLogger.reportError(ex.getMessage(), ex);
                                 }
+                                quad.setColor(result ? new Vector3f(0.0f, 1.0f, 0.0f) : new Vector3f(1.0f, 0.0f, 0.0f));
+                                text.setContent(input.toString());
+                            } else {
+                                boolean ok = Command.execute(command);
+                                quad.setColor(ok ? new Vector3f(0.0f, 1.0f, 0.0f) : new Vector3f(1.0f, 0.0f, 0.0f));
+                                text.setContent(input.toString());
+                            }
+
+                            text.pos = new Vector2f(inText.pos);
+                            text.pos.y += (0.5f - text.getRelativeCharHeight()) * Text.LINE_SPACING;
+
+                            quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1);
+                            quad.getPos().y = text.pos.y;
+
+                            text.setOffset(new Vector2f(1.0f, 0.0f));
+
+                            history.add(0, new Pair<>(text, quad));
+
+                            if (history.size() == HISTORY_CAPACITY) {
+                                history.remove(history.size() - 1);
                             }
 
                             input.setLength(0);
@@ -122,7 +138,7 @@ public class Console {
                 }
             });
             GLFW.glfwWaitEvents();
-            GLFW.glfwSetCharCallback(myWindow.getWindowID(), new GLFWCharCallback() {
+            GLFW.glfwSetCharCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWCharCallback() {
                 @Override
                 public void invoke(long window, int codepoint) {
                     input.append((char) codepoint);
@@ -134,39 +150,41 @@ public class Console {
 
     public void render() {
         if (enabled) {
-            panel.setWidth(myWindow.getWidth());
-            panel.setHeight(myWindow.getHeight() / 2);
+            panel.setWidth(GameObject.MY_WINDOW.getWidth());
+            panel.setHeight(GameObject.MY_WINDOW.getHeight() / 2);
             if (!panel.isBuffered()) {
                 panel.buffer();
             }
             panel.render();
-            inText.getPos().x = -1.0f;
-            inText.getPos().y = 0.5f - panel.getPos().y + inText.giveRelativeCharHeight() / 2.0f;
+            inText.pos.x = -1.0f;
+            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
             if (!inText.isBuffered()) {
                 inText.buffer();
             }
             inText.render();
             int index = 0;
-            Text prevItem = null;
-            for (Text item : history) {
-                item.getPos().x = -1.0f;
-                if (index == 0) {
-                    item.getPos().y = inText.getPos().y + item.giveRelativeCharHeight() * Text.LINE_SPACING;
-                } else if (prevItem != null) {
-                    item.getPos().y = prevItem.getPos().y + item.giveRelativeCharHeight() * Text.LINE_SPACING;
+            for (Pair<Text, Quad> item : history) {
+                Text text = item.getKey();
+                Quad quad = item.getValue();
+                text.pos.x = -1.0f;
+                quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 2) - 1.0f;
+                text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * Text.LINE_SPACING;
+                quad.getPos().y = text.pos.y;
+                if (!text.isBuffered()) {
+                    text.buffer();
                 }
-                if (!item.isBuffered()) {
-                    item.buffer();
+                text.render();
+                if (!quad.isBuffered()) {
+                    quad.buffer();
                 }
-                item.render();
-                prevItem = item;
+                quad.render();
                 index++;
             }
         }
     }
 
     public Window getMyWindow() {
-        return myWindow;
+        return GameObject.MY_WINDOW;
     }
 
     public Quad getPanel() {
@@ -181,20 +199,12 @@ public class Console {
         return inText;
     }
 
-    public List<Text> getHistory() {
+    public List<Pair<Text, Quad>> getHistory() {
         return history;
     }
 
     public boolean isEnabled() {
         return enabled;
-    }
-
-    public Commands getCommands() {
-        return commands;
-    }
-
-    public Object getObjMutex() {
-        return objMutex;
     }
 
 }
