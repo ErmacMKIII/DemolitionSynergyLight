@@ -52,12 +52,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // everyone can access only one instance of the game object
     private static GameObject instance;
 
-    public enum State {
-        LOCKED, UNLOCKED
-    }
-
-    // private purpose (to know if object is locked or not)
-    private State access = State.UNLOCKED;
+    private boolean concurrent = false;
 
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
@@ -75,26 +70,22 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // update Game Object stuff (call only from main)
-    public void update(float deltaTime) {
-        if (!levelContainer.isWorking() && access != State.LOCKED) { // working check avoids locking the monitor
-            synchronized (this) {
-                levelContainer.update(deltaTime);
-            }
+    public synchronized void update(float deltaTime) {
+        if (!levelContainer.isWorking() && !concurrent) { // working check avoids locking the monitor
+            levelContainer.update(deltaTime);
         }
         intrface.update();
         intrface.setCollText(assertCollision);
     }
 
     // requires context to be set in the proper thread (call only from renderer)
-    public void render() {
+    public synchronized void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
-        if (levelContainer.isWorking() || access == State.LOCKED) { // working check avoids locking the monitor
+        if (levelContainer.isWorking() || concurrent) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else {
-            synchronized (this) {
-                levelContainer.render();
-            }
+            levelContainer.render();
             intrface.getProgText().setEnabled(false);
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
@@ -122,31 +113,33 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // -------------------------------------------------------------------------
     // Called from concurrent thread
-    public synchronized void startNewLevel() {
+    public void startNewLevel() {
+        concurrent = true;
         levelContainer.startNewLevel();
+        concurrent = false;
     }
 
     // Called from concurrent thread
-    public synchronized boolean loadLevelFromFile(String fileName) {
-        access = State.LOCKED;
+    public boolean loadLevelFromFile(String fileName) {
+        concurrent = true;
         boolean ok = levelContainer.loadLevelFromFile(fileName);
-        access = State.UNLOCKED;
+        concurrent = false;
         return ok;
     }
 
     // Called from concurrent thread
-    public synchronized boolean saveLevelToFile(String fileName) {
-        access = State.LOCKED;
+    public boolean saveLevelToFile(String fileName) {
+        concurrent = true;
         boolean ok = levelContainer.saveLevelToFile(fileName);
-        access = State.UNLOCKED;
+        concurrent = false;
         return ok;
     }
 
     // Called from concurrent thread
-    public synchronized boolean generateRandomLevel(int numberOfBlocks) {
-        access = State.LOCKED;
+    public boolean generateRandomLevel(int numberOfBlocks) {
+        concurrent = true;
         boolean ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
-        access = State.UNLOCKED;
+        concurrent = false;
         return ok;
     }
 
@@ -156,11 +149,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // -------------------------------------------------------------------------
 
     // destroys the window
-    public void destroy() {
-        synchronized (GameObject.OBJ_MUTEX) {
-            GameObject.MY_WINDOW.loadContext();
-            GameObject.MY_WINDOW.destroy();
-        }
+    public synchronized void destroy() {
+        GameObject.MY_WINDOW.loadContext();
+        GameObject.MY_WINDOW.destroy();
     }
 
     // collision detection - critter against solid obstacles
