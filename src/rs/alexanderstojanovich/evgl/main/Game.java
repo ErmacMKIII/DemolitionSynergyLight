@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evgl.main;
 
 import java.util.Arrays;
 import java.util.concurrent.FutureTask;
+import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWErrorCallback;
@@ -30,10 +31,11 @@ import rs.alexanderstojanovich.evgl.level.Editor;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Game {
 
@@ -47,12 +49,14 @@ public class Game {
     public static final int LEFT = 2;
     public static final int RIGHT = 3;
 
-    public static final float EPSILON = 0.001f;
+    public static final float EPSILON = 0.0005f;
 
     private static int ups; // current update per second    
-    private static int fpsMax; // fps max or fps cap     
+    private static int fpsMax; // fps max or fps cap  
+
     private static int updPasses = 0;
     public static final int UPD_MAX_PASSES = 5;
+
     // if this is reach game will close without exception!
     public static final double CRITICAL_TIME = 5.0;
 
@@ -68,7 +72,6 @@ public class Game {
     private boolean moveMouse = false;
 
     private int crosshairColorNum = 0;
-    private int blockColorNum = 0;
 
     private final boolean[] mouseButtons = new boolean[8];
 
@@ -80,9 +83,10 @@ public class Game {
     public static final String CURR = "./";
     public static final String RESOURCES_DIR = "/rs/alexanderstojanovich/evgl/resources/";
 
-    public static final String DATA_ZIP = "dsynergy_lsv.zip";
+    public static final String DATA_ZIP = "dsynergy_light.zip";
 
     public static final String SCREENSHOTS = "screenshots";
+    public static final String CACHE = "cache";
 
     public static final String INTRFACE_ENTRY = "intrface/";
     public static final String PLAYER_ENTRY = "player/";
@@ -97,23 +101,23 @@ public class Game {
     };
     private static Mode currentMode = Mode.FREE;
 
-    public Game(GameObject gameObject) {
+    public Game(Configuration inCfg, GameObject gameObject) {
         this.gameObject = gameObject;
-        Game.fpsMax = Main.CONFIG.getFpsCap();
-        if (Main.CONFIG.isFullscreen()) {
+        Game.fpsMax = inCfg.getFpsCap();
+        if (inCfg.isFullscreen()) {
             GameObject.MY_WINDOW.fullscreen();
         } else {
             GameObject.MY_WINDOW.windowed();
         }
-        if (Main.CONFIG.isVsync()) {
+        if (inCfg.isVsync()) {
             GameObject.MY_WINDOW.enableVSync();
         } else {
             GameObject.MY_WINDOW.disableVSync();
         }
         GameObject.MY_WINDOW.centerTheWindow();
         Arrays.fill(keys, false);
-        gameObject.getMusicPlayer().setGain(Main.CONFIG.getMusicVolume());
-        gameObject.getSoundFXPlayer().setGain(Main.CONFIG.getSoundFXVolume());
+        gameObject.getMusicPlayer().setGain(inCfg.getMusicVolume());
+        gameObject.getSoundFXPlayer().setGain(inCfg.getSoundFXVolume());
         initCallbacks();
     }
 
@@ -266,81 +270,38 @@ public class Game {
         }
     }
 
-    private void setCrosshairColor(float red, float green, float blue) {
-        gameObject.getIntrface().getCrosshair().getColor().x = red;
-        gameObject.getIntrface().getCrosshair().getColor().y = green;
-        gameObject.getIntrface().getCrosshair().getColor().z = blue;
-    }
-
-    private void setNewBlockColor(float red, float green, float blue) {
-        if (Editor.getSelectedNew() != null) {
-            Editor.getSelectedNew().getPrimaryColor().x = red;
-            Editor.getSelectedNew().getPrimaryColor().y = green;
-            Editor.getSelectedNew().getPrimaryColor().z = blue;
-        }
+    private void setCrosshairColor(Vector3f color) {
+        gameObject.getIntrface().getCrosshair().setColor(color);
     }
 
     private void cycleCrosshairColor() {
         switch (crosshairColorNum) {
             case 0:
-                setCrosshairColor(1.0f, 0.0f, 0.0f); // RED                
+                setCrosshairColor(Vector3fColors.RED); // RED                
                 break;
             case 1:
-                setCrosshairColor(0.0f, 1.0f, 0.0f); // GREEN
+                setCrosshairColor(Vector3fColors.GREEN); // GREEN
                 break;
             case 2:
-                setCrosshairColor(0.0f, 0.0f, 1.0f); // BLUE
+                setCrosshairColor(Vector3fColors.BLUE); // BLUE
                 break;
             case 3:
-                setCrosshairColor(0.0f, 1.0f, 1.0f); // CYAN
+                setCrosshairColor(Vector3fColors.CYAN); // CYAN
                 break;
             case 4:
-                setCrosshairColor(1.0f, 0.0f, 1.0f); // MAGENTA
+                setCrosshairColor(Vector3fColors.MAGENTA); // MAGENTA
                 break;
             case 5:
-                setCrosshairColor(1.0f, 1.0f, 0.0f); // YELLOW
+                setCrosshairColor(Vector3fColors.YELLOW); // YELLOW
                 break;
             case 6:
-                setCrosshairColor(1.0f, 1.0f, 1.0f); // WHITE
+                setCrosshairColor(Vector3fColors.WHITE); // WHITE
                 break;
         }
         if (crosshairColorNum < 6) {
             crosshairColorNum++;
         } else {
             crosshairColorNum = 0;
-        }
-    }
-
-    private void cycleBlockColor() {
-        if (Editor.getSelectedNew() != null) {
-            switch (blockColorNum) {
-                case 0:
-                    setNewBlockColor(1.0f, 0.0f, 0.0f); // RED                
-                    break;
-                case 1:
-                    setNewBlockColor(0.0f, 1.0f, 0.0f); // GREEN
-                    break;
-                case 2:
-                    setNewBlockColor(0.0f, 0.0f, 1.0f); // BLUE
-                    break;
-                case 3:
-                    setNewBlockColor(0.0f, 1.0f, 1.0f); // CYAN
-                    break;
-                case 4:
-                    setNewBlockColor(1.0f, 0.0f, 1.0f); // MAGENTA
-                    break;
-                case 5:
-                    setNewBlockColor(1.0f, 1.0f, 0.0f); // YELLOW
-                    break;
-                case 6:
-                    setNewBlockColor(1.0f, 1.0f, 1.0f); // WHITE
-                    break;
-            }
-            if (blockColorNum < 6) {
-                blockColorNum++;
-            } else {
-                blockColorNum = 0;
-            }
         }
     }
 
@@ -374,6 +335,9 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_F5 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     LevelContainer.printPositionMaps();
+                } else if (key == GLFW.GLFW_KEY_F6 && action == GLFW.GLFW_PRESS) {
+                    Arrays.fill(keys, false);
+                    gameObject.getLevelContainer().printPriorityQueues();
                 } else if (key == GLFW.GLFW_KEY_F12 && action == GLFW.GLFW_PRESS) {
                     Arrays.fill(keys, false);
                     FutureTask<Boolean> task = new FutureTask<Boolean>(Command.SCREENSHOT);
@@ -381,7 +345,7 @@ public class Game {
                 } else if (key == GLFW.GLFW_KEY_P && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     cycleCrosshairColor();
                 } else if (key == GLFW.GLFW_KEY_M && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
-                    cycleBlockColor();
+                    Editor.cycleBlockColor();
                 } else if (key == GLFW.GLFW_KEY_LEFT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Editor.selectPrevTexture(gameObject);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
@@ -436,9 +400,6 @@ public class Game {
         AudioFile audioFile = AudioFile.AMBIENT;
         gameObject.getMusicPlayer().play(audioFile, true);
 
-        double timer0 = GLFW.glfwGetTime();
-        double timer1 = GLFW.glfwGetTime();
-
         ups = 0;
 
         double lastTime = GLFW.glfwGetTime();
@@ -460,6 +421,7 @@ public class Game {
 
             while (upsTicks >= 1.0 && updPasses < UPD_MAX_PASSES) {
                 GLFW.glfwPollEvents();
+                gameObject.determineVisibleChunks();
                 float deltaTime = (float) (upsTicks / TPS);
                 gameObject.update(deltaTime);
                 if (currentMode == Mode.SINGLE_PLAYER) {
@@ -476,22 +438,17 @@ public class Game {
             }
             updPasses = 0;
 
-            // update label which shows fps every second
-            if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                gameObject.getIntrface().getUpdText().setContent("ups: " + Game.getUps());
-                ups = 0;
-                timer0 += 1.0;
+            synchronized (GameObject.OBJ_SYNC) {
+                GameObject.OBJ_SYNC.notify();
             }
 
-            if (GLFW.glfwGetTime() > timer1 + 0.25) {
-                if (!gameObject.isWorking()) { // this prevents locking monitor unnecessarily
-                    gameObject.patch();
-                }
-                timer1 += 0.25;
-            }
         }
-        // stops the music
+        // stops the music        
         gameObject.getMusicPlayer().stop();
+        // wakes up the sleepers!
+        synchronized (GameObject.OBJ_SYNC) {
+            GameObject.OBJ_SYNC.notify();
+        }
     }
 
     public Configuration makeConfig() {
@@ -521,6 +478,10 @@ public class Game {
 
     public static int getUps() {
         return ups;
+    }
+
+    public static void setUps(int ups) {
+        Game.ups = ups;
     }
 
     public static int getFpsMax() {

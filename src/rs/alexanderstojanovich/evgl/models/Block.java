@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.joml.Intersectionf;
 import org.joml.Vector2f;
@@ -38,11 +40,12 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Block extends Model {
 
@@ -90,34 +93,24 @@ public class Block extends Model {
         readFromTxtFile("cube.txt");
     }
 
-    public Block(boolean selfBuffer) {
+    public Block() {
         super();
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices);
         indices = new ArrayList<>(INDICES);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
-    public Block(boolean selfBuffer, String texName) {
+    public Block(String texName) {
         super();
         this.texName = texName;
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices);
         indices = new ArrayList<>(INDICES);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
-    public Block(boolean selfBuffer, String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
+    public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
         super();
         this.texName = texName;
         Arrays.fill(enabledFaces, true);
@@ -126,11 +119,6 @@ public class Block extends Model {
         this.solid = solid;
         deepCopyTo(vertices);
         indices = new ArrayList<>(INDICES);
-        if (selfBuffer) {
-            bufferVertices();
-            bufferIndices();
-            buffered = true;
-        }
         calcDims();
     }
 
@@ -199,7 +187,9 @@ public class Block extends Model {
         }
         fb.flip();
         // storing vertices and FACE_NORMALS buffer on the graphics card
-        vbo = GL15.glGenBuffers();
+        if (vbo == 0) {
+            vbo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
@@ -209,7 +199,9 @@ public class Block extends Model {
         // storing indices in the buffer
         IntBuffer ib = createIntBuffer(getFaceBits());
         // storing indices buffer on the graphics card
-        ibo = GL15.glGenBuffers();
+        if (ibo == 0) {
+            ibo = GL15.glGenBuffers();
+        }
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
         GL15.glBufferData(GL15.GL_ELEMENT_ARRAY_BUFFER, ib, GL15.GL_STATIC_DRAW);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
@@ -223,29 +215,12 @@ public class Block extends Model {
     }
 
     private void calcDims() {
-        Vector3f vect = vertices.get(0).getPos();
-        float xMin = vect.x;
-        float yMin = vect.y;
-        float zMin = vect.z;
+        final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
+        final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
 
-        float xMax = vect.x;
-        float yMax = vect.y;
-        float zMax = vect.z;
-
-        for (int i = 1; i < vertices.size(); i++) {
-            vect = vertices.get(i).getPos();
-            xMin = Math.min(xMin, vect.x);
-            yMin = Math.min(yMin, vect.y);
-            zMin = Math.min(zMin, vect.z);
-
-            xMax = Math.max(xMax, vect.x);
-            yMax = Math.max(yMax, vect.y);
-            zMax = Math.max(zMax, vect.z);
-        }
-
-        width = Math.abs(xMax - xMin) * scale;
-        height = Math.abs(yMax - yMin) * scale;
-        depth = Math.abs(zMax - zMin) * scale;
+        width = Math.abs(maxv.x - minv.x) * scale;
+        height = Math.abs(maxv.y - minv.y) * scale;
+        depth = Math.abs(maxv.z - minv.z) * scale;
     }
 
     @Override
@@ -283,8 +258,8 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public List<Vertex> getFaceVertices(int faceNum) {
-        return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
+    public Pair<Integer, Integer> getFaceVertices(int faceNum) {
+        return new Pair<>(4 * faceNum, 4 * (faceNum + 1));
     }
 
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
@@ -295,7 +270,7 @@ public class Block extends Model {
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.25f) {
+            if (Math.abs(vx.dot(vy)) >= 0.1f) {
                 counter++;
                 break;
             }
@@ -306,57 +281,45 @@ public class Block extends Model {
         return bool;
     }
 
-    public void disableFace(int faceNum, boolean selfBuffer) {
-        for (Vertex vertex : getFaceVertices(faceNum)) {
-            vertex.setEnabled(false);
+    public void disableFace(int faceNum) {
+        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
+        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
+            vertices.get(i).setEnabled(false);
         }
         this.enabledFaces[faceNum] = false;
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void enableFace(int faceNum, boolean selfBuffer) {
-        for (Vertex vertex : getFaceVertices(faceNum)) {
-            vertex.setEnabled(true);
+    public void enableFace(int faceNum) {
+        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
+        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
+            vertices.get(i).setEnabled(true);
         }
         this.enabledFaces[faceNum] = true;
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void enableAllFaces(boolean selfBuffer) {
+    public void enableAllFaces() {
         for (Vertex vertex : vertices) {
             vertex.setEnabled(true);
         }
         Arrays.fill(enabledFaces, true);
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void disableAllFaces(boolean selfBuffer) {
+    public void disableAllFaces() {
         for (Vertex vertex : vertices) {
             vertex.setEnabled(false);
         }
         Arrays.fill(enabledFaces, false);
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void reverseFaceVertexOrder(boolean selfBuffer) {
+    public void reverseFaceVertexOrder() {
         for (int j = 0; j <= 5; j++) {
-            Collections.reverse(getFaceVertices(j));
+            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
+            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
         }
         verticesReversed = !verticesReversed;
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
-    public void setUVsForSkybox(boolean selfBuffer) {
+    public void setUVsForSkybox() {
         revertGroupsOfVertices();
         // LEFT
         vertices.get(4 * LEFT).getUv().x = 0.5f;
@@ -396,9 +359,6 @@ public class Block extends Model {
             vertices.get(4 * BOTTOM + i).getUv().y = vertices.get(4 * LEFT + i).getUv().y + 1.0f / 3.0f;
         }
 
-        if (selfBuffer) {
-            bufferVertices();
-        }
     }
 
     private void revertGroupsOfVertices() {
@@ -480,9 +440,9 @@ public class Block extends Model {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
             if (bit == 1) {
-                enableFace(j, selfBuffer);
+                enableFace(j);
             } else {
-                disableFace(j, selfBuffer);
+                disableFace(j);
             }
         }
     }
@@ -643,12 +603,12 @@ public class Block extends Model {
         byte[] texNameArr = texName.getBytes();
         System.arraycopy(texNameArr, 0, byteArray, offset, 5);
         offset += 5;
-        byte[] solidPos = Vector3fUtils.vec3fToByteArray(pos);
-        System.arraycopy(solidPos, 0, byteArray, offset, solidPos.length); // 12 B
-        offset += solidPos.length;
-        byte[] solidCol = Vector3fUtils.vec3fToByteArray(primaryColor);
-        System.arraycopy(solidCol, 0, byteArray, offset, solidCol.length); // 12 B
-        offset += solidCol.length;
+        byte[] posArr = Vector3fUtils.vec3fToByteArray(pos);
+        System.arraycopy(posArr, 0, byteArray, offset, posArr.length); // 12 B
+        offset += posArr.length;
+        byte[] colArr = Vector3fUtils.vec3fToByteArray(primaryColor);
+        System.arraycopy(colArr, 0, byteArray, offset, colArr.length); // 12 B
+
         return byteArray;
     }
 
@@ -668,11 +628,39 @@ public class Block extends Model {
         byte[] blockPosCol = new byte[12];
         System.arraycopy(byteArray, offset, blockPosCol, 0, blockPosCol.length);
         Vector3f blockCol = Vector3fUtils.vec3fFromByteArray(blockPosCol);
-        offset += blockPosCol.length;
 
-        Block block = new Block(false, texName, blockPos, blockCol, solid);
+        Block block = new Block(texName, blockPos, blockCol, solid);
 
         return block;
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = 3;
+        hash = 29 * hash + Arrays.hashCode(this.enabledFaces);
+        hash = 29 * hash + (this.verticesReversed ? 1 : 0);
+        return hash;
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null) {
+            return false;
+        }
+        if (getClass() != obj.getClass()) {
+            return false;
+        }
+        final Block other = (Block) obj;
+        if (this.verticesReversed != other.verticesReversed) {
+            return false;
+        }
+        if (!Arrays.equals(this.enabledFaces, other.enabledFaces)) {
+            return false;
+        }
+        return true;
     }
 
 }

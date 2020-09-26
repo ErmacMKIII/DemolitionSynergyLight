@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,10 +30,11 @@ import rs.alexanderstojanovich.evgl.main.Renderer;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.PlainTextReader;
+import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Intrface {
 
@@ -42,6 +43,7 @@ public class Intrface {
     private Quad crosshair;
     private Text updText; // displays updates
     private Text fpsText; // displays framerates
+    private Text opsText; // displays operations per second
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
     private Text progText; // progress text;
@@ -71,27 +73,30 @@ public class Intrface {
         AudioPlayer musicPlayer = gameObject.getMusicPlayer();
         AudioPlayer soundFXPlayer = gameObject.getSoundFXPlayer();
 
-        updText = new Text(Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 1.0f));
-        updText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
-        updText.setOffset(new Vector2f(1.0f, 1.0f));
-        fpsText = new Text(Texture.FONT, "", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, 0.85f));
-        fpsText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
-        fpsText.setOffset(new Vector2f(1.0f, 1.0f));
+        updText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 1.0f));
+        updText.alignToNextChar();
+        fpsText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
+        fpsText.alignToNextChar();
+        opsText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
+        opsText.alignToNextChar();
 
-        collText = new Text(Texture.FONT, "No Collision", new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -1.0f));
-        collText.setOffset(new Vector2f(1.0f, -1.0f));
-        helpText = new Text(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, 0.9f));
-        helpText.setOffset(new Vector2f(1.0f, 1.0f));
+        collText = new Text(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
+        collText.alignToNextChar();
+        helpText = new Text(Texture.FONT, PlainTextReader.readFromFile(Game.INTRFACE_ENTRY, "help.txt"), Vector3fColors.WHITE, new Vector2f(-1.0f, 0.9f));
         helpText.setScale(0.625f);
+        helpText.alignToNextChar();
         helpText.setEnabled(false);
-        progText = new Text(Texture.FONT, "", new Vector3f(1.0f, 1.0f, 0.0f), new Vector2f(-1.0f, -0.9f));
-        progText.setOffset(new Vector2f(1.0f, -1.0f));
-        screenText = new Text(Texture.FONT, "", new Vector3f(1.0f, 1.0f, 1.0f), new Vector2f(-1.0f, -0.7f));
-        screenText.setOffset(new Vector2f(1.0f, 1.0f));
+        progText = new Text(Texture.FONT, "", Vector3fColors.YELLOW, new Vector2f(-1.0f, -0.9f));
+        progText.alignToNextChar();
+        screenText = new Text(Texture.FONT, "", Vector3fColors.WHITE, new Vector2f(-1.0f, -0.7f));
         screenText.setScale(0.625f);
-        gameModeText = new Text(Texture.FONT, Game.getCurrentMode().name(), new Vector3f(0.0f, 1.0f, 0.0f), new Vector2f(1.0f, 1.0f));
+        screenText.alignToNextChar();
+        gameModeText = new Text(Texture.FONT, Game.getCurrentMode().name(), Vector3fColors.GREEN, new Vector2f(1.0f, 1.0f));
+        gameModeText.setAlignment(Text.ALIGNMENT_RIGHT);
+        gameModeText.alignToNextChar();
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
+        crosshair.setColor(Vector3fColors.WHITE);
         List<Pair<String, Boolean>> mainMenuPairs = new ArrayList<>();
         mainMenuPairs.add(new Pair<>("SINGLE PLAYER", true));
         mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
@@ -124,11 +129,9 @@ public class Intrface {
             }
         };
         Quad logo = new Quad(232, 100, Texture.LOGO);
-        logo.getColor().x = 1.0f;
-        logo.getColor().y = 0.7f;
-        logo.getColor().z = 0.1f;
+        logo.setColor(new Vector3f(1.0f, 0.7f, 0.1f));
         mainMenu.setLogo(logo);
-        mainMenu.setAlignmentAmount(Menu.ALIGNMENT_CENTER);
+        mainMenu.setAlignmentAmount(Text.ALIGNMENT_CENTER);
 
         saveDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f),
                 "SAVE LEVEL TO FILE: ", "LEVEL SAVED SUCESSFULLY!", "SAVING LEVEL FAILED!") {
@@ -289,7 +292,7 @@ public class Intrface {
         optionsMenu.options.get(4).getValue().fetchFromArray(mouseSens, 1);
         optionsMenu.options.get(5).getValue().fetchFromArray(volume, 10);
         optionsMenu.options.get(6).getValue().fetchFromArray(volume, 10);
-        optionsMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
+        optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
 
         List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();
         editorMenuPairs.add(new Pair<>("START NEW LEVEL", true));
@@ -327,20 +330,16 @@ public class Intrface {
                 }
             }
         };
-        editorMenu.setAlignmentAmount(Menu.ALIGNMENT_LEFT);
+        editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
     }
 
     public void setCollText(boolean mode) {
         if (mode) {
             collText.setContent("Collision!");
-            collText.getColor().x = 1.0f;
-            collText.getColor().y = 0.0f;
-            collText.getColor().z = 0.0f;
+            collText.setColor(Vector3fColors.RED);
         } else {
             collText.setContent("No Collision");
-            collText.getColor().x = 0.0f;
-            collText.getColor().y = 1.0f;
-            collText.getColor().z = 0.0f;
+            collText.setColor(Vector3fColors.GREEN);
         }
     }
 
@@ -368,6 +367,10 @@ public class Intrface {
             fpsText.buffer();
         }
         fpsText.render();
+        if (!opsText.isBuffered()) {
+            opsText.buffer();
+        }
+        opsText.render();
         if (!collText.isBuffered()) {
             collText.buffer();
         }
@@ -421,6 +424,10 @@ public class Intrface {
 
     public Text getFpsText() {
         return fpsText;
+    }
+
+    public Text getOpsText() {
+        return opsText;
     }
 
     public Text getCollText() {

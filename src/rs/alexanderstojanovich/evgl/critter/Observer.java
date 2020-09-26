@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Observer implements Critter {
 
@@ -35,7 +35,7 @@ public class Observer implements Critter {
 
     public Observer(String modelFileName, String texName, Vector3f pos, Vector3f color, float scale) {
         this.camera = new Camera(pos);
-        this.model = new Model(false, Game.WORLD_ENTRY, modelFileName, texName);
+        this.model = new Model(Game.WORLD_ENTRY, modelFileName, texName);
         this.model.setPrimaryColor(color);
         this.model.setScale(scale);
         this.model.setLight(camera.getPos());

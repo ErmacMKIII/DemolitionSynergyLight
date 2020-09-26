@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evgl.main;
 
-import org.joml.Vector2f;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.MasterRenderer;
 import rs.alexanderstojanovich.evgl.core.Window;
@@ -27,14 +26,14 @@ import rs.alexanderstojanovich.evgl.level.RandomLevelGenerator;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
-    public static final String TITLE = "Demolition Synergy - v19 TITANIUM LSV";
+    public static final String TITLE = "Demolition Synergy - v20 URANIUM LIGHT";
 
-    public static final Object OBJ_MUTEX = new Object(); // mutex for window, used for game and renderer
+    public static final Object OBJ_SYNC = new Object(); // sync for window, used for game and renderer
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
@@ -51,8 +50,6 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     // everyone can access only one instance of the game object
     private static GameObject instance;
-
-    private boolean concurrent = false;
 
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
@@ -71,7 +68,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // -------------------------------------------------------------------------
     // update Game Object stuff (call only from main)
     public synchronized void update(float deltaTime) {
-        if (!levelContainer.isWorking() && !concurrent) { // working check avoids locking the monitor
+        if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
         }
         intrface.update();
@@ -81,7 +78,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // requires context to be set in the proper thread (call only from renderer)
     public synchronized void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
-        if (levelContainer.isWorking() || concurrent) { // working check avoids locking the monitor
+        if (levelContainer.isWorking()) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
         } else {
@@ -89,21 +86,25 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(false);
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-        intrface.getGameModeText().setOffset(new Vector2f(-Game.getCurrentMode().name().length(), 1.0f));
         intrface.render();
         MY_WINDOW.render();
     }
 
     // -------------------------------------------------------------------------
     // hint to the render that objects should be buffered
-    public synchronized void unbuffer() {
+    public void unbuffer() {
         levelContainer.getSolidChunks().setBuffered(false);
         levelContainer.getFluidChunks().setBuffered(false);
     }
 
-    // patch chunks
-    public synchronized void patch() {
-        levelContainer.patch();
+    // calls determine visible chunks
+    public void determineVisibleChunks() {
+        levelContainer.determineVisible();
+    }
+
+    // auto load/save level container chunks
+    public void chunkOperations() {
+        levelContainer.chunkOperations();
     }
 
     // animation for water
@@ -114,48 +115,41 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // -------------------------------------------------------------------------
     // Called from concurrent thread
     public void startNewLevel() {
-        concurrent = true;
         levelContainer.startNewLevel();
-        concurrent = false;
     }
 
     // Called from concurrent thread
     public boolean loadLevelFromFile(String fileName) {
-        concurrent = true;
         boolean ok = levelContainer.loadLevelFromFile(fileName);
-        concurrent = false;
         return ok;
     }
 
     // Called from concurrent thread
     public boolean saveLevelToFile(String fileName) {
-        concurrent = true;
         boolean ok = levelContainer.saveLevelToFile(fileName);
-        concurrent = false;
         return ok;
     }
 
     // Called from concurrent thread
     public boolean generateRandomLevel(int numberOfBlocks) {
-        concurrent = true;
         boolean ok = levelContainer.generateRandomLevel(randomLevelGenerator, numberOfBlocks);
-        concurrent = false;
         return ok;
     }
 
+    // Checked from main and Renderer
     public boolean isWorking() {
         return levelContainer.isWorking();
     }
     // -------------------------------------------------------------------------
 
     // destroys the window
-    public synchronized void destroy() {
+    public void destroy() {
         GameObject.MY_WINDOW.loadContext();
         GameObject.MY_WINDOW.destroy();
     }
 
     // collision detection - critter against solid obstacles
-    public synchronized boolean hasCollisionWithCritter(Critter critter) {
+    public boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithCritter(critter);
     }
 

@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -32,7 +32,7 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Window {
 
@@ -213,6 +213,14 @@ public class Window {
 
     public int getHeight() {
         return height;
+    }
+
+    public float getAspectRatio() {
+        return width / height;
+    }
+
+    public static float getMinAspectRatio() {
+        return 4.0f / 3.0f;
     }
 
     public String getTitle() {

@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,7 +24,7 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Camera { // is 3D looking camera
 
@@ -36,12 +36,12 @@ public class Camera { // is 3D looking camera
     public static final Vector3f Z_AXIS = new Vector3f(0.0f, 0.0f, 1.0f);
 
     // three vectors determining exact camera position aka camera vectors
-    private Vector3f front;
-    private Vector3f up;
-    private Vector3f right;
+    private Vector3f front = Z_AXIS;
+    private Vector3f up = Y_AXIS;
+    private Vector3f right = X_AXIS;
 
     private float yaw = (float) (-Math.PI / 2.0); // sideways look angle
-    private float pitch = 0.0f; // up and down look angle
+    private float pitch = (float) (-Math.PI); // up and down look angle
 
     public Camera() {
         this.pos = new Vector3f();

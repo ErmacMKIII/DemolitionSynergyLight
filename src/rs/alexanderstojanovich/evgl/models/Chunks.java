@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,14 +18,18 @@ package rs.alexanderstojanovich.evgl.models;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Queue;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.Pair;
+import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Chunks {
 
@@ -36,7 +40,7 @@ public class Chunks {
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
 
-    private static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
+    public static final Comparator<Chunk> COMPARATOR = new Comparator<Chunk>() {
         @Override
         public int compare(Chunk o1, Chunk o2) {
             if (o1.getId() > o2.getId()) {
@@ -49,8 +53,18 @@ public class Chunks {
         }
     };
 
+    public void updateFluids() {
+        for (Block fluidBlock : getTotalList()) {
+            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
+            if (pair != null) {
+                byte neighborBits = pair.getValue();
+                fluidBlock.setFaceBits(~neighborBits & 63, false);
+            }
+        }
+    }
+
     // for both internal (Init) and external use (Editor)
-    public void addBlock(Block block) {
+    public void addBlock(Block block, boolean useLevelContainer) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -61,33 +75,46 @@ public class Chunks {
             chunkList.sort(COMPARATOR);
         }
 
-        chunk.addBlock(block);
+        chunk.addBlock(block, useLevelContainer);
     }
 
     // for removing blocks (Editor)
-    public void removeBlock(Block block) {
+    public void removeBlock(Block block, boolean useLevelContainer) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
 
         if (chunk != null) { // if chunk exists already                            
-            chunk.removeBlock(block);
-            // if chunk is empty (with no tuples) -> remove it
-            if (chunk.getBlocks().getBlockList().isEmpty()) {
-                chunkList.remove(chunk);
-            }
+            chunk.removeBlock(block, useLevelContainer);
         }
     }
 
-    public Chunk getChunk(int chunkId) { // linear search through chunkList to get the chunk
-        Chunk result = null;
-        for (Chunk chunk : chunkList) {
-            if (chunk.isCached() && chunk.getMemory()[0] == chunkId
-                    || !chunk.isCached() && chunk.getId() == chunkId) {
-                result = chunk;
-                break;
+// linear search through chunkList to get the chunk
+//    public Chunk getChunk(int chunkId) { 
+//        Chunk result = null;
+//        for (Chunk chunk : chunkList) {
+//            if (chunk.getId() == chunkId) {
+//                result = chunk;
+//                break;
+//            }
+//        }
+//        return result;
+//    }
+    // (logaritmic) binary search through sorted chunkList to get the chunk
+    public Chunk getChunk(int chunkId) {
+        int left = 0;
+        int right = chunkList.size() - 1;
+        while (left <= right) {
+            int mid = left + (right - left) / 2;
+            Chunk candidate = chunkList.get(mid);
+            if (candidate.getId() == chunkId) {
+                return candidate;
+            } else if (candidate.getId() < chunkId) {
+                left = mid + 1;
+            } else {
+                right = mid - 1;
             }
         }
-        return result;
+        return null;
     }
 
     public void animate() { // call only for fluid blocks
@@ -104,6 +131,15 @@ public class Chunks {
         }
     }
 
+    // buffer all -> deprecated cuz it's not good use!
+    @Deprecated
+    public void bufferAll() {
+        for (Chunk chunk : chunkList) {
+            chunk.bufferAll();
+        }
+        buffered = true;
+    }
+
     // for each instanced rendering
     @Deprecated
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
@@ -113,33 +149,39 @@ public class Chunks {
     }
 
     // very useful -> it should be like this initially
-    public void saveAllToMemory() {
+    @Deprecated
+    public void saveAllToDisk() {
         for (Chunk chunk : chunkList) {
-            chunk.saveToMemory();
+            chunk.saveToDisk();
         }
     }
 
     // variation on the topic
-    public void saveInvisibleToMemory() {
-        for (Chunk chunk : chunkList) {
-            if (!chunk.isVisible()) {
-                chunk.saveToMemory();
+    public void saveToDisk(Queue<Pair<Integer, Float>> chunkQueue) {
+        for (Pair<Integer, Float> pair : chunkQueue) {
+            int chunkId = pair.getKey();
+            Chunk chunk = getChunk(chunkId);
+            if (chunk != null) {
+                chunk.saveToDisk();
             }
         }
     }
 
     // useful when saving and wanna load everything into memory
-    public void loadAllFromMemory() {
+    @Deprecated
+    public void loadAllFromDisk() {
         for (Chunk chunk : chunkList) {
-            chunk.loadFromMemory();
+            chunk.loadFromDisk();
         }
     }
 
     // variation on the topic
-    public void loadVisibleToMemory() {
-        for (Chunk chunk : chunkList) {
-            if (chunk.isVisible()) {
-                chunk.loadFromMemory();
+    public void loadFromDisk(Queue<Pair<Integer, Float>> chunkQueue) {
+        for (Pair<Integer, Float> pair : chunkQueue) {
+            int chunkId = pair.getKey();
+            Chunk chunk = getChunk(chunkId);
+            if (chunk != null) {
+                chunk.loadFromDisk();
             }
         }
     }
@@ -157,7 +199,7 @@ public class Chunks {
     public List<Block> getTotalList() {
         List<Block> result = new GapList<>();
         for (Chunk chunk : chunkList) {
-            result.addAll(chunk.getBlocks().getBlockList());
+            result.addAll(chunk.getBlockList());
         }
         return result;
     }
@@ -172,7 +214,7 @@ public class Chunks {
             sb.append("id = ").append(chunk.getId())
                     .append(" | solid = ").append(chunk.isSolid())
                     .append(" | size = ").append(chunk.size())
-                    .append(" | visible = ").append(chunk.isVisible())
+                    .append(" | timeToLive = ").append(chunk.getTimeToLive())
                     .append(" | buffered = ").append(chunk.isBuffered())
                     .append(" | cached = ").append(chunk.isCached())
                     .append("\n");
@@ -202,5 +244,4 @@ public class Chunks {
             chunk.getBlocks().setCameraInFluid(cameraInFluid);
         }
     }
-
 }

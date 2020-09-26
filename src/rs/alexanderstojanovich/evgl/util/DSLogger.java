@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -27,7 +27,7 @@ import org.apache.log4j.TTCCLayout;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class DSLogger {
 
@@ -36,7 +36,7 @@ public class DSLogger {
     private static String generateLogFileName() { // such as "dsynergy_2020-20-10_15-20-42.log"
         final LocalDateTime dateTime = LocalDateTime.now();
         StringBuilder sb = new StringBuilder();
-        sb.append("dsynergy_");
+        sb.append("dsynergy_light_");
         sb.append(dateTime.format(DateTimeFormatter.ofPattern("yyyy-MM-dd_HH-mm-ss")));
         sb.append(".log");
         return sb.toString();

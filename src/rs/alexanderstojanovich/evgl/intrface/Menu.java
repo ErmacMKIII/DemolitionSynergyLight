@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evgl.intrface;
 import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCursorPosCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
@@ -29,16 +28,13 @@ import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
+import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public abstract class Menu {
-
-    public static final float ALIGNMENT_LEFT = 0.0f;
-    public static final float ALIGNMENT_RIGHT = 1.0f;
-    public static final float ALIGNMENT_CENTER = 0.5f;
 
     private Quad logo; // only basic menus have logo
     protected Text title;
@@ -55,7 +51,7 @@ public abstract class Menu {
 
     protected Quad iterator; // is minigun iterator
 
-    protected float alignmentAmount = ALIGNMENT_LEFT;
+    protected float alignmentAmount = Text.ALIGNMENT_LEFT;
 
     // coordinates of the cursor (in OpenGL) when menu is opened
     protected float xposGL = 0.0f;
@@ -65,7 +61,7 @@ public abstract class Menu {
 
     public Menu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
         this.title = new Text(Texture.FONT, title);
-        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.title.setColor(Vector3fColors.YELLOW);
         this.itemPairs = itemPairs;
         Texture mngTexture = Texture.MINIGUN;
         makeItems();
@@ -78,7 +74,7 @@ public abstract class Menu {
     public Menu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
         this.title = new Text(Texture.FONT, title);
         this.title.setScale(scale);
-        this.title.setColor(new Vector3f(1.0f, 1.0f, 0.0f));
+        this.title.setColor(Vector3fColors.YELLOW);
         this.itemPairs = itemPairs;
         this.enabled = false;
         this.pos = pos;
@@ -88,8 +84,6 @@ public abstract class Menu {
         makeItems();
         iterator.getPos().x = -items.get(selected).getPos().x;
         iterator.getPos().y = items.get(selected).getPos().y;
-        iterator.getColor().x = items.get(selected).getColor().x;
-        iterator.getColor().y = items.get(selected).getColor().y;
         iterator.setColor(items.get(selected).getColor());
         iterator.setScale(scale);
     }
@@ -98,17 +92,14 @@ public abstract class Menu {
         for (Pair<String, Boolean> pair : itemPairs) {
             Text item = new Text(Texture.FONT, pair.getKey());
             if (pair.getValue()) {
-                item.getColor().x = 0.0f;
-                item.getColor().y = 1.0f;
-                item.getColor().z = 0.0f;
+                item.color = Vector3fColors.GREEN;
             } else {
-                item.getColor().x = 1.0f;
-                item.getColor().y = 0.0f;
-                item.getColor().z = 0.0f;
+                item.color = Vector3fColors.RED;
             }
             item.getPos().x = pos.x;
             item.getPos().y = -Text.LINE_SPACING * items.size() * item.getRelativeCharHeight() + pos.y;
             item.setScale(itemScale);
+            item.setAlignment(alignmentAmount);
             items.add(item);
         }
     }
@@ -148,7 +139,7 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), Game.getLastX(), Game.getLastY());
+                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
                     leave();
                 } else if (key == GLFW.GLFW_KEY_UP && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     selectPrev();
@@ -161,7 +152,7 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), Game.getLastX(), Game.getLastY());
+                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), GameObject.MY_WINDOW.getWidth() / 2.0, GameObject.MY_WINDOW.getHeight() / 2.0);
                     execute();
                 }
             }
@@ -177,7 +168,6 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), Game.getLastX(), Game.getLastY());
                     execute();
                 } else if (button == GLFW.GLFW_MOUSE_BUTTON_2 && action == GLFW.GLFW_PRESS) {
                     enabled = false;
@@ -186,7 +176,6 @@ public abstract class Menu {
                     GLFW.glfwSetInputMode(window, GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_DISABLED);
                     GLFW.glfwSetCursorPosCallback(window, Game.getDefaultCursorCallback());
                     GLFW.glfwSetMouseButtonCallback(window, Game.getDefaultMouseButtonCallback());
-                    GLFW.glfwSetCursorPos(GameObject.MY_WINDOW.getWindowID(), Game.getLastX(), Game.getLastY());
                     leave();
                 }
             }
@@ -206,15 +195,15 @@ public abstract class Menu {
     public void render() {
         if (enabled) {
             int longest = longestWord();
-            title.getPos().x = (alignmentAmount * (longest - title.getContent().length()) - longest / 2)
-                    * title.getRelativeCharWidth() * itemScale + pos.x;
+            title.setAlignment(alignmentAmount);
+            title.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * title.getRelativeCharWidth()) + pos.x;
             title.getPos().y = Text.LINE_SPACING * title.getRelativeCharHeight() * itemScale + pos.y;
             if (!title.isBuffered()) {
                 title.buffer();
             }
             title.render();
             if (logo != null && title.getContent().equals("")) {
-                logo.getPos().x = pos.x;
+                logo.getPos().x = (alignmentAmount - 0.5f) + pos.x;
                 logo.getPos().y = logo.giveRelativeHeight() * logo.getScale() + pos.y;
                 if (!logo.isBuffered()) {
                     logo.buffer();
@@ -223,8 +212,8 @@ public abstract class Menu {
             }
             int index = 0;
             for (Text item : items) {
-                int itemDiff = longest - item.getContent().length();
-                item.getPos().x = (alignmentAmount * itemDiff - longest / 2) * item.getRelativeCharWidth() * itemScale + pos.x;
+                item.setAlignment(alignmentAmount);
+                item.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.getRelativeCharWidth()) + pos.x;
                 item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
 
                 if (!item.isBuffered()) {
@@ -234,8 +223,10 @@ public abstract class Menu {
                 item.render();
                 index++;
             }
+
             iterator.getPos().x = items.get(selected).getPos().x;
-            iterator.getPos().x -= 2.0f * items.get(selected).getRelativeCharWidth() * itemScale;
+            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
+            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
             iterator.getPos().y = items.get(selected).getPos().y;
             iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {

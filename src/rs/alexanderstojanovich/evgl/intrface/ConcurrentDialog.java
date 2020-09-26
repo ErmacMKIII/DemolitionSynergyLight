@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,13 +20,14 @@ import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
-import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.GameObject;
+import rs.alexanderstojanovich.evgl.texture.Texture;
+import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public abstract class ConcurrentDialog extends Dialog { // execution is done in another thread                
 
@@ -36,14 +37,10 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             boolean ok = execute(input.toString());
             if (ok) {
                 dialog.setContent(success);
-                dialog.getColor().x = 0.0f;
-                dialog.getColor().y = 1.0f;
-                dialog.getColor().z = 0.0f;
+                dialog.color = Vector3fColors.GREEN;
             } else {
                 dialog.setContent(fail);
-                dialog.getColor().x = 1.0f;
-                dialog.getColor().y = 0.0f;
-                dialog.getColor().z = 0.0f;
+                dialog.color = Vector3fColors.RED;
             }
             input.setLength(0);
             done = true;
@@ -65,9 +62,7 @@ public abstract class ConcurrentDialog extends Dialog { // execution is done in 
             enabled = true;
             done = false;
             dialog.setContent(question + "_");
-            dialog.getColor().x = 1.0f;
-            dialog.getColor().y = 1.0f;
-            dialog.getColor().z = 1.0f;
+            dialog.color = Vector3fColors.WHITE;
             GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
             GLFW.glfwSetKeyCallback(GameObject.MY_WINDOW.getWindowID(), new GLFWKeyCallback() {

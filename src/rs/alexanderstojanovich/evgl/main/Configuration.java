@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -26,7 +26,7 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Configuration {
 
@@ -39,7 +39,7 @@ public class Configuration {
     private boolean debug = false;
     private float musicVolume = 0.5f;
     private float soundFXVolume = 0.5f;
-    private static final String CONFIG_PATH = "dsynergy_lsv.ini";
+    private static final String CONFIG_PATH = "dsynergy_light.ini";
 
     // reads configuration from the .ini file
     public void readConfigFile() {

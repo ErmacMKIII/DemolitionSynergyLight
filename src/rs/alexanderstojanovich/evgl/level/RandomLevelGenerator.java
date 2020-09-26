@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -19,18 +19,19 @@ package rs.alexanderstojanovich.evgl.level;
 import java.util.List;
 import org.joml.Random;
 import org.joml.SimplexNoise;
+import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class RandomLevelGenerator {
 
-    public static final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 2.0f - 2.0f);
-    public static final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 2.0f + 2.0f);
+    public static final int POS_MAX = Math.round(LevelContainer.SKYBOX_WIDTH / 8.0f);
+    public static final int POS_MIN = Math.round(-LevelContainer.SKYBOX_WIDTH / 8.0f);
 
     public static final float ONE_OVER_POS_MAX = 1.0f / POS_MAX;
     public static final float ONE_OVER_POS_MIN = 1.0f / POS_MIN;
@@ -72,7 +73,12 @@ public class RandomLevelGenerator {
         do {
             posx = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
-            posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
+
+            Vector2f posXZ = new Vector2f(posx, posz);
+            posXZ.normalize();
+
+            posy = SimplexNoise.noise(posXZ.x, posXZ.y) * POS_VAL;
+
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
                 && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
@@ -83,9 +89,9 @@ public class RandomLevelGenerator {
         float colb = random.nextFloat();
         Vector3f pos = randPos;
         Vector3f col = new Vector3f(colr, colg, colb);
-        Block solidBlock = new Block(false, randomSolidTexture(), pos, col, true);
+        Block solidBlock = new Block(randomSolidTexture(), pos, col, true);
 
-        levelContainer.getSolidChunks().addBlock(solidBlock);
+        levelContainer.getSolidChunks().addBlock(solidBlock, true);
         return solidBlock;
     }
 
@@ -97,7 +103,12 @@ public class RandomLevelGenerator {
         do {
             posx = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
             posz = random.nextInt(POS_MAX - POS_MIN + 1) + POS_MIN;
-            posy = SimplexNoise.noise(posx + Math.signum(posx) * 0.5f, posz + Math.signum(posz) * 0.5f) * POS_VAL;
+
+            Vector2f posXZ = new Vector2f(posx, posz);
+            posXZ.normalize();
+
+            posy = SimplexNoise.noise(posXZ.x, posXZ.y) * POS_VAL;
+
             randPos = new Vector3f(posx, posy, posz);
         } while (LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
                 && LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(randPos))
@@ -108,9 +119,9 @@ public class RandomLevelGenerator {
         float colb = random.nextFloat();
         Vector3f pos = randPos;
         Vector3f col = new Vector3f(colr, colg, colb);
-        Block fluidBlock = new Block(false, "water", pos, col, false);
+        Block fluidBlock = new Block("water", pos, col, false);
 
-        levelContainer.getFluidChunks().addBlock(fluidBlock);
+        levelContainer.getFluidChunks().addBlock(fluidBlock, true);
         return fluidBlock;
     }
 
@@ -155,9 +166,9 @@ public class RandomLevelGenerator {
         float adjColb = random.nextFloat();
         Vector3f adjCol = new Vector3f(adjColr, adjColg, adjColb);
         String adjTexture = randomSolidTexture();
-        Block solidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, true);
+        Block solidAdjBlock = new Block(adjTexture, adjPos, adjCol, true);
 
-        levelContainer.getSolidChunks().addBlock(solidAdjBlock);
+        levelContainer.getSolidChunks().addBlock(solidAdjBlock, true);
         return solidAdjBlock;
     }
 
@@ -202,9 +213,9 @@ public class RandomLevelGenerator {
         float adjColb = random.nextFloat();
         Vector3f adjCol = new Vector3f(adjColr, adjColg, adjColb);
         String adjTexture = "water";
-        Block fluidAdjBlock = new Block(false, adjTexture, adjPos, adjCol, false);
+        Block fluidAdjBlock = new Block(adjTexture, adjPos, adjCol, false);
 
-        levelContainer.getFluidChunks().addBlock(fluidAdjBlock);
+        levelContainer.getFluidChunks().addBlock(fluidAdjBlock, true);
         return fluidAdjBlock;
     }
 

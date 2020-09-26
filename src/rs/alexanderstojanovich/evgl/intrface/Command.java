@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -30,7 +30,7 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public enum Command implements Callable<Boolean> { // its not actually a thread but its used for remote execution (from Executor)
     FPS_MAX,
@@ -38,6 +38,7 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
     FULLSCREEN,
     WINDOWED,
     VSYNC,
+    WATER_EFFECTS,
     MOUSE_SENSITIVITY,
     MUSIC_VOLUME,
     SOUND_VOLUME,
@@ -129,8 +130,8 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
             case FPS_MAX:
                 int fpsMax = (int) command.args.get(0);
                 if (fpsMax > 0 && fpsMax <= 1E6) {
-                    Game.setFpsMax(fpsMax);
                     Renderer.setFpsTicks(0.0);
+                    Game.setFpsMax(fpsMax);
                     success = true;
                 }
                 break;
@@ -185,7 +186,7 @@ public enum Command implements Callable<Boolean> { // its not actually a thread 
                 }
                 LocalDateTime now = LocalDateTime.now();
                 File screenshot = new File(Game.SCREENSHOTS + File.separator
-                        + "dsynergy-" + now.getYear()
+                        + "dsynergy_light-" + now.getYear()
                         + "-" + now.getMonthValue()
                         + "-" + now.getDayOfMonth()
                         + "_" + now.getHour()

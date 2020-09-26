@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -20,7 +20,9 @@ import java.util.Objects;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
+ * @param <Key> the first part of the pair.
+ * @param <Value> the second part of the pair.
  */
 public class Pair<Key, Value> {
 
@@ -75,6 +77,11 @@ public class Pair<Key, Value> {
             return false;
         }
         return true;
+    }
+
+    @Override
+    public String toString() {
+        return "{" + "key=" + key + ", value=" + value + '}';
     }
 
 }

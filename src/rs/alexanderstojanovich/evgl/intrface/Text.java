@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -25,12 +25,17 @@ import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Pair;
+import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Text {
+
+    public static final float ALIGNMENT_LEFT = 0.0f;
+    public static final float ALIGNMENT_CENTER = 0.5f;
+    public static final float ALIGNMENT_RIGHT = 1.0f;
 
     protected Texture texture;
     protected String content;
@@ -47,13 +52,13 @@ public class Text {
     public static final int STD_FONT_WIDTH = 24;
     public static final int STD_FONT_HEIGHT = 24;
 
-    protected Vector2f offset = new Vector2f();
+    protected float alignment = ALIGNMENT_LEFT; // per character alignment
 
     protected boolean buffered = false;
 
     protected Vector2f pos = new Vector2f();
     protected float scale = 1.0f;
-    protected Vector3f color = new Vector3f(1.0f, 1.0f, 1.0f);
+    protected Vector3f color = Vector3fColors.WHITE;
 
     protected int charWidth = STD_FONT_WIDTH;
     protected int charHeight = STD_FONT_HEIGHT;
@@ -92,11 +97,11 @@ public class Text {
                 int k = i / 64;
                 int asciiCode = (int) (lines[l].charAt(i));
 
-                float cellU = (int) (asciiCode % GRID_SIZE) * CELL_SIZE;
-                float cellV = (int) (asciiCode / GRID_SIZE) * CELL_SIZE;
+                float cellU = (asciiCode % GRID_SIZE) * CELL_SIZE;
+                float cellV = (asciiCode / GRID_SIZE) * CELL_SIZE;
 
-                float xinc = j + offset.x;
-                float ydec = k + l * LINE_SPACING + offset.y;
+                float xinc = j - content.length() * alignment;
+                float ydec = k + l * LINE_SPACING;
 
                 pairList.add(new Pair<>(xinc, ydec));
 
@@ -157,6 +162,19 @@ public class Text {
         return charHeight * heightFactor / (float) GameObject.MY_WINDOW.getHeight();
     }
 
+    // it aligns position to next char position (useful if characters are cut out or so)
+    // call this method only once!
+    public void alignToNextChar() {
+        float srw = scale * getRelativeCharWidth(); // scaled relative width
+        float srh = scale * getRelativeCharHeight(); // scaled relative height                                                                 
+
+        float xrem = pos.x % srw;
+        pos.x -= (pos.x < 0.0f) ? xrem : (xrem - srw);
+
+        float yrem = pos.y % srh;
+        pos.y -= yrem;
+    }
+
     public Window getMyWindow() {
         return GameObject.MY_WINDOW;
     }
@@ -194,12 +212,12 @@ public class Text {
         return pairList;
     }
 
-    public Vector2f getOffset() {
-        return offset;
+    public float getAlignment() {
+        return alignment;
     }
 
-    public void setOffset(Vector2f offset) {
-        this.offset = offset;
+    public void setAlignment(float alignment) {
+        this.alignment = alignment;
     }
 
     public boolean isBuffered() {

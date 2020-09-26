@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -29,16 +29,15 @@ import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
+import rs.alexanderstojanovich.evgl.util.MathUtils;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Renderer extends Thread implements Executor {
 
     private final GameObject gameObject;
-
-    private boolean assertCollision = false;
 
     private static double fpsTicks = 0.0;
     private static int fps = 0;
@@ -59,19 +58,15 @@ public class Renderer extends Thread implements Executor {
     @Override
     public void run() {
         MasterRenderer.initGL(GameObject.MY_WINDOW); // loads myWindow context, creates OpenGL context..
-        boolean ok = GameObject.MY_WINDOW.setResolution(Main.CONFIG.getWidth(), Main.CONFIG.getHeight());
         MasterRenderer.setResolution(GameObject.MY_WINDOW.getWidth(), GameObject.MY_WINDOW.getHeight());
-        GameObject.MY_WINDOW.centerTheWindow();
-        if (!ok) {
-            DSLogger.reportError("Game unable to set resolution!", null);
-        }
         ShaderProgram.initAllShaders(); // it's important that first GL is done and then this one 
         PerspectiveRenderer.updatePerspective(GameObject.MY_WINDOW); // updates perspective for all the existing shaders
         Texture.bufferAllTextures();
 
-        double timer0 = GLFW.glfwGetTime();
         double timer1 = GLFW.glfwGetTime();
         double timer2 = GLFW.glfwGetTime();
+
+        fps = 0;
 
         double lastTime = GLFW.glfwGetTime();
         double currTime;
@@ -91,7 +86,7 @@ public class Renderer extends Thread implements Executor {
 
             currTime = GLFW.glfwGetTime();
             diff = currTime - lastTime;
-            fpsTicks += -Math.expm1(-diff * Game.getFpsMax());
+            fpsTicks += diff * MathUtils.lerp(Game.getFpsMax(), fps, fps / Game.getFpsMax());
             lastTime = currTime;
 
             // Detecting critical status
@@ -101,6 +96,15 @@ public class Renderer extends Thread implements Executor {
                 break;
             }
 
+            // don't render before update
+            synchronized (GameObject.OBJ_SYNC) {
+                try {
+                    GameObject.OBJ_SYNC.wait();
+                } catch (InterruptedException ex) {
+                    DSLogger.reportError(ex.getMessage(), ex);
+                }
+            }
+
             while (fpsTicks >= 1.0 && renPasses < REN_MAX_PASSES) {
                 gameObject.render();
                 fps++;
@@ -108,13 +112,6 @@ public class Renderer extends Thread implements Executor {
                 renPasses++;
             }
             renPasses = 0;
-
-            // update text which shows ups and fps every second
-            if (GLFW.glfwGetTime() > timer0 + 1.0) {
-                gameObject.getIntrface().getFpsText().setContent("fps: " + fps);
-                fps = 0;
-                timer0 += 1.0;
-            }
 
             // update text which shows dialog every 5 seconds
             if (GLFW.glfwGetTime() > timer1 + 5.0) {
@@ -174,14 +171,6 @@ public class Renderer extends Thread implements Executor {
 
     public LevelContainer getLevelContainer() {
         return gameObject.getLevelContainer();
-    }
-
-    public boolean isAssertCollision() {
-        return assertCollision;
-    }
-
-    public void setAssertCollision(boolean assertCollision) {
-        this.assertCollision = assertCollision;
     }
 
     public static double getFpsTicks() {

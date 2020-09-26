@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2020 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -21,21 +21,22 @@ import java.util.List;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.FutureTask;
 import org.joml.Vector2f;
-import org.joml.Vector3f;
 import org.lwjgl.glfw.GLFW;
 import org.lwjgl.glfw.GLFWCharCallback;
 import org.lwjgl.glfw.GLFWKeyCallback;
 import rs.alexanderstojanovich.evgl.core.Window;
+import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.main.Renderer;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
+import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Console {
 
@@ -50,16 +51,17 @@ public class Console {
     public Console() {
         this.panel = new Quad(GameObject.MY_WINDOW.getWidth(),
                 GameObject.MY_WINDOW.getHeight() / 2, Texture.CONSOLE);
-        this.panel.setColor(new Vector3f(0.25f, 0.5f, 0.75f));
+        this.panel.setColor(LevelContainer.SKYBOX_COLOR);
         this.panel.setPos(new Vector2f(0.0f, 0.5f));
         this.panel.setIgnoreFactor(true);
 
         this.inText = new Text(Texture.FONT, "]_");
-        this.inText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
+        this.inText.setColor(Vector3fColors.GREEN);
         this.inText.pos.x = -1.0f;
-        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
+        this.inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
 
-        this.inText.setOffset(new Vector2f(1.0f, 0.0f));
+        this.inText.setAlignment(Text.ALIGNMENT_LEFT);
+        this.inText.alignToNextChar();
     }
 
     public void open() {
@@ -67,7 +69,6 @@ public class Console {
             enabled = true;
 
             inText.setContent("]_");
-            inText.setColor(new Vector3f(0.0f, 1.0f, 0.0f));
 
             GLFW.glfwSetInputMode(GameObject.MY_WINDOW.getWindowID(), GLFW.GLFW_CURSOR, GLFW.GLFW_CURSOR_NORMAL);
             GLFW.glfwSetCursorPosCallback(GameObject.MY_WINDOW.getWindowID(), null);
@@ -98,7 +99,7 @@ public class Console {
                             // if command is invalid it's null
                             if (command == Command.ERROR) {
                                 text.setContent("Invalid Command!");
-                                text.setColor(new Vector3f(1.0f, 0.0f, 0.0f));
+                                text.setColor(Vector3fColors.RED);
                             } else if (command.isRendererCommand()) {
                                 boolean result = false;
                                 FutureTask<Boolean> consoleTask = new FutureTask<Boolean>(command);
@@ -109,11 +110,11 @@ public class Console {
                                 } catch (InterruptedException | ExecutionException ex) {
                                     DSLogger.reportError(ex.getMessage(), ex);
                                 }
-                                quad.setColor(result ? new Vector3f(0.0f, 1.0f, 0.0f) : new Vector3f(1.0f, 0.0f, 0.0f));
+                                quad.setColor(result ? Vector3fColors.GREEN : Vector3fColors.RED);
                                 text.setContent(input.toString());
                             } else {
                                 boolean ok = Command.execute(command);
-                                quad.setColor(ok ? new Vector3f(0.0f, 1.0f, 0.0f) : new Vector3f(1.0f, 0.0f, 0.0f));
+                                quad.setColor(ok ? Vector3fColors.GREEN : Vector3fColors.RED);
                                 text.setContent(input.toString());
                             }
 
@@ -123,7 +124,7 @@ public class Console {
                             quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1);
                             quad.getPos().y = text.pos.y;
 
-                            text.setOffset(new Vector2f(1.0f, 0.0f));
+                            text.setAlignment(Text.ALIGNMENT_LEFT);
 
                             history.add(0, new Pair<>(text, quad));
 
@@ -157,7 +158,9 @@ public class Console {
             }
             panel.render();
             inText.pos.x = -1.0f;
-            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight() / 2.0f;
+            inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
+            inText.alignToNextChar(); // this changes both pos.x and pos.y for inText
+
             if (!inText.isBuffered()) {
                 inText.buffer();
             }
@@ -166,9 +169,9 @@ public class Console {
             for (Pair<Text, Quad> item : history) {
                 Text text = item.getKey();
                 Quad quad = item.getValue();
-                text.pos.x = -1.0f;
-                quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 2) - 1.0f;
-                text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * Text.LINE_SPACING;
+                text.pos.x = inText.pos.x;
+                text.pos.y = inText.pos.y + (index + 1) * text.getRelativeCharHeight() * 2.0f;
+                quad.getPos().x = text.getRelativeCharWidth() * (text.content.length() + 1) - 1.0f;
                 quad.getPos().y = text.pos.y;
                 if (!text.isBuffered()) {
                     text.buffer();

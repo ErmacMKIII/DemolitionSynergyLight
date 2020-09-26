@@ -1,5 +1,5 @@
-/*
- * Copyright (C) 2019 Coa
+/* 
+ * Copyright (C) 2020 Alexander Stojanovich <coas91@rocketmail.com>
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -24,12 +24,11 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
  *
- * @author Coa
+ * @author Alexander Stojanovich <coas91@rocketmail.com>
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
     private final List<Block> blockList = new GapList<>();
-    private int bigVbo;
     private boolean cameraInFluid = false;
     private boolean verticesReversed = false;
     // array with offsets in the big float buffer
@@ -45,14 +44,15 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public void animate() { // call only for fluid blocks
         for (Block block : blockList) {
-            block.animate(true);
+            block.animate();
+            block.bufferAll();
         }
     }
 
     public void prepare() { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
-                block.reverseFaceVertexOrder(false);
+                block.reverseFaceVertexOrder();
             }
             verticesReversed = !verticesReversed;
         }
@@ -80,20 +80,12 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
-    public void release() {
-        if (buffered) {
-            for (Block block : blockList) {
-                block.release();
-            }
-        }
+    public boolean isBuffered() {
+        return buffered;
     }
 
     public List<Block> getBlockList() {
         return blockList;
-    }
-
-    public int getBigVbo() {
-        return bigVbo;
     }
 
     public boolean isVerticesReversed() {
@@ -110,10 +102,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public void setVerticesReversed(boolean verticesReversed) {
         this.verticesReversed = verticesReversed;
-    }
-
-    public boolean isBuffered() {
-        return buffered;
     }
 
     public void setBuffered(boolean buffered) {
