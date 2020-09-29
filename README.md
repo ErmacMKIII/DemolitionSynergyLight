@@ -1,5 +1,5 @@
 # DemolitionSynergyLight
-Voxel Engine Game (Incomplete) using latest LWJGL. Light version of original.
+Voxel Engine (Incomplete Game) using latest LWJGL. Light version of original.
 Designated for low-end spec and prior generation computers.
 
 In order to build the project you are gonna need NetBeans IDE 8.2 and following libraries:
