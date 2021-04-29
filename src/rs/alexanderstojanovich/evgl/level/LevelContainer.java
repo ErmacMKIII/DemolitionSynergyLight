@@ -333,10 +333,10 @@ public class LevelContainer implements GravityEnviroment {
 
         List<Block> solidBlocks = solidChunks.getTotalList();
         List<Block> fluidBlocks = fluidChunks.getTotalList();
-        
+
         int solidNum = solidChunks.totalSize();
         buffer[pos++] = (byte) (solidNum);
-        buffer[pos++] = (byte) (solidNum >> 8);        
+        buffer[pos++] = (byte) (solidNum >> 8);
 
         //----------------------------------------------------------------------
         for (Block solidBlock : solidBlocks) {

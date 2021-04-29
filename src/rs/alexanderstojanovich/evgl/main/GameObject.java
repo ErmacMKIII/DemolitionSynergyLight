@@ -31,9 +31,7 @@ import rs.alexanderstojanovich.evgl.level.RandomLevelGenerator;
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
-    public static final String TITLE = "Demolition Synergy - v20 URANIUM LIGHT";
-
-    public static final Object OBJ_SYNC = new Object(); // sync for window, used for game and renderer
+    public static final String TITLE = "Demolition Synergy - v21 VIVID LIGHT";
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
@@ -57,7 +55,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         this.intrface = new Intrface(this);
     }
 
-    // lazy initialization allowing only one instance
+    /**
+     * Get shared Game Object instance. Game Object is controller for the game.
+     *
+     * @return Game Object instance
+     */
     public static GameObject getInstance() {
         if (instance == null) {
             instance = new GameObject();
@@ -66,8 +68,12 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // -------------------------------------------------------------------------
-    // update Game Object stuff (call only from main)
-    public synchronized void update(float deltaTime) {
+    /**
+     * Update Game Object stuff (call only from main)
+     *
+     * @param deltaTime game object environment update time
+     */
+    public void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
         }
@@ -75,8 +81,11 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
         intrface.setCollText(assertCollision);
     }
 
-    // requires context to be set in the proper thread (call only from renderer)
-    public synchronized void render() {
+    /**
+     * Renderer method. Requires context to be set in the proper thread (call
+     * only from renderer)
+     */
+    public void render() {
         MasterRenderer.render(); // it clears color bit and depth buffer bit
         if (levelContainer.isWorking()) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
@@ -91,24 +100,33 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
 
     // -------------------------------------------------------------------------
-    // hint to the render that objects should be buffered
+    /**
+     * Hint to the render that objects should be buffered
+     */
     public void unbuffer() {
         levelContainer.getSolidChunks().setBuffered(false);
         levelContainer.getFluidChunks().setBuffered(false);
     }
 
-    // calls determine visible chunks
+    /**
+     * Calls chunk functions to determine visible chunks
+     */
     public void determineVisibleChunks() {
         levelContainer.determineVisible();
     }
 
-    // auto load/save level container chunks
-    public synchronized void chunkOperations() {
+    /**
+     * Auto load/save level container chunks
+     */
+    public void chunkOperations() {
         levelContainer.chunkOperations();
     }
 
-    // animation for water
-    public synchronized void animate() {
+    /**
+     * Animation for water (and other fluids)
+     *
+     */
+    public void animate() {
         levelContainer.animate();
     }
 
@@ -142,7 +160,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     }
     // -------------------------------------------------------------------------
 
-    // destroys the window
+    /*    
+    * Load the window context and destroyes the window.
+     */
     public void destroy() {
         GameObject.MY_WINDOW.loadContext();
         GameObject.MY_WINDOW.destroy();

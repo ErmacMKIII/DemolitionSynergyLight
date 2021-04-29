@@ -35,21 +35,21 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     // this is maximum amount of blocks of the type game can hold
     private boolean buffered = false;
 
-    public void bufferAll() { // buffer both, call it before any rendering
+    public synchronized void bufferAll() { // buffer both, call it before any rendering
         for (Block block : blockList) {
             block.bufferAll();
         }
         buffered = true;
     }
 
-    public void animate() { // call only for fluid blocks
+    public synchronized void animate() { // call only for fluid blocks
         for (Block block : blockList) {
             block.animate();
             block.bufferAll();
         }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering
+    public synchronized void prepare() { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
                 block.reverseFaceVertexOrder();
@@ -59,7 +59,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // standard render all
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (shaderProgram != null && !blockList.isEmpty()) {
             for (Block block : blockList) {
                 block.light = lightSrc;
@@ -69,7 +69,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // powerful render if block is visible by camera
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+    public synchronized void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
         if (shaderProgram != null && !blockList.isEmpty()) {
             for (Block block : blockList) {
                 if (predicate.test(block)) {

@@ -43,7 +43,7 @@ public class Intrface {
     private Quad crosshair;
     private Text updText; // displays updates
     private Text fpsText; // displays framerates
-    private Text opsText; // displays operations per second
+    private Text alphaText; // displays alpha load
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
     private Text progText; // progress text;
@@ -77,8 +77,8 @@ public class Intrface {
         updText.alignToNextChar();
         fpsText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
         fpsText.alignToNextChar();
-        opsText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
-        opsText.alignToNextChar();
+        alphaText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
+        alphaText.alignToNextChar();
 
         collText = new Text(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
         collText.alignToNextChar();
@@ -367,10 +367,10 @@ public class Intrface {
             fpsText.buffer();
         }
         fpsText.render();
-        if (!opsText.isBuffered()) {
-            opsText.buffer();
+        if (!alphaText.isBuffered()) {
+            alphaText.buffer();
         }
-        opsText.render();
+        alphaText.render();
         if (!collText.isBuffered()) {
             collText.buffer();
         }
@@ -426,8 +426,8 @@ public class Intrface {
         return fpsText;
     }
 
-    public Text getOpsText() {
-        return opsText;
+    public Text getAlphaText() {
+        return alphaText;
     }
 
     public Text getCollText() {

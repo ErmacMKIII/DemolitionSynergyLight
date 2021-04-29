@@ -118,18 +118,18 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // renderer does this stuff prior to any rendering
-    public void bufferAll() {
+    public synchronized void bufferAll() {
         if (!cached) {
             blocks.bufferAll();
             buffered = true;
         }
     }
 
-    public void animate() { // call only for fluid blocks
+    public synchronized void animate() { // call only for fluid blocks
         blocks.animate();
     }
 
-    public void prepare() { // call only for fluid blocks before rendering        
+    public synchronized void prepare() { // call only for fluid blocks before rendering        
         blocks.prepare();
     }
 
@@ -139,14 +139,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         if (shaderProgram != null) {
             blocks.render(shaderProgram, lightSrc);
         }
     }
 
     // it renders all of them instanced if they're visible
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+    public synchronized void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
         if (shaderProgram != null) {
             blocks.renderIf(shaderProgram, lightSrc, predicate);
         }
