@@ -91,7 +91,7 @@ public class Game {
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
 
-    private static double upsTicks = 0.0;
+    protected static double upsTicks = 0.0;
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
