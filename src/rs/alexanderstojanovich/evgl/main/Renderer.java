@@ -42,9 +42,6 @@ public class Renderer extends Thread implements Executor {
     private static double fpsTicks = 0.0;
     private static int fps = 0;
 
-    private static int renPasses = 0;
-    public static final int REN_MAX_PASSES = 5;
-
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
     protected static double alpha = 0.0;
@@ -180,10 +177,6 @@ public class Renderer extends Thread implements Executor {
 
     public static void setFps(int fps) {
         Renderer.fps = fps;
-    }
-
-    public static int getRenPasses() {
-        return renPasses;
     }
 
     public GameObject getGameObject() {
