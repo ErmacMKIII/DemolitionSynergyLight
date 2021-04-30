@@ -1,6 +1,6 @@
 # DemolitionSynergyLight
 Voxel Engine (Incomplete Game) using latest LWJGL. Light version of original.
-Designated for low-end spec and prior generation computers. Legacy OpenGL is used.
+Designated for low-end spec and prior generation computers. Legacy OpenGL is used. It lacks fancy features such as Water Effects.
 
 In order to build the project you are gonna need NetBeans IDE 8.2 and following libraries:
 
