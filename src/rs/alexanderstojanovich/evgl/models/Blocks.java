@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evgl.models;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.GapList;
+import org.magicwerk.brownies.collections.BigList;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    private final List<Block> blockList = new GapList<>();
+    private final List<Block> blockList = new BigList<>(5000);
     private boolean cameraInFluid = false;
     private boolean verticesReversed = false;
     // array with offsets in the big float buffer
