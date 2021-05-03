@@ -102,6 +102,9 @@ public class LevelContainer implements GravityEnviroment {
     // position of all the fluid blocks to texture name & neighbors
     public static final Map<Integer, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
 
+    // std time to live
+    public static final int STD_TTL = 40; // 40 seconds
+
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
@@ -645,7 +648,7 @@ public class LevelContainer implements GravityEnviroment {
 
                         Chunk solidChunk = solidChunks.getChunk(visibleId);
                         if (solidChunk != null) {
-                            solidChunk.setTimeToLive(60);
+                            solidChunk.setTimeToLive(STD_TTL);
                         } else if (Chunk.isCached(visibleId, true)) {
                             solidChunk = Chunk.loadFromDisk(visibleId, true);
                             solidChunks.getChunkList().add(solidChunk);
@@ -653,7 +656,7 @@ public class LevelContainer implements GravityEnviroment {
 
                         Chunk fluidChunk = fluidChunks.getChunk(visibleId);
                         if (fluidChunk != null) {
-                            fluidChunk.setTimeToLive(60);
+                            fluidChunk.setTimeToLive(STD_TTL);
                         } else if (Chunk.isCached(visibleId, false)) {
                             fluidChunk = Chunk.loadFromDisk(visibleId, false);
                             fluidChunk.updateFluids();
@@ -670,6 +673,8 @@ public class LevelContainer implements GravityEnviroment {
                         if (solidChunk != null) {
                             if (solidChunk.isAlive()) {
                                 solidChunk.decTimeToLive();
+                            } else if (!solidChunk.isAlive() && solidChunk.isBuffered()) {
+                                solidChunk.unbuffer();
                             } else if (!solidChunk.isBuffered() && !solidChunk.isCached()) {
                                 solidChunk.saveToDisk();
                                 solidChunks.getChunkList().remove(solidChunk);
@@ -679,6 +684,8 @@ public class LevelContainer implements GravityEnviroment {
                         if (fluidChunk != null) {
                             if (fluidChunk.isAlive()) {
                                 fluidChunk.decTimeToLive();
+                            } else if (!fluidChunk.isAlive() && fluidChunk.isBuffered()) {
+                                fluidChunk.unbuffer();
                             } else if (!fluidChunk.isBuffered() && !fluidChunk.isCached()) {
                                 fluidChunk.saveToDisk();
                                 fluidChunks.getChunkList().remove(fluidChunk);
@@ -729,25 +736,23 @@ public class LevelContainer implements GravityEnviroment {
             }
         };
 
+        // only visible & uncached are in chunk list
         for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (solidChunk.isAlive() && !solidChunk.isBuffered()) {
+            if (!solidChunk.isBuffered()) {
                 solidChunk.bufferAll();
-            } else if (!solidChunk.isAlive() && solidChunk.isBuffered()) {
-                solidChunk.unbuffer();
-            } else if (solidChunk.isAlive() && solidChunk.isBuffered()) {
-                solidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
             }
+
+            solidChunk.render(ShaderProgram.getMainShader(), obsCamera.getPos());
         }
 
+        // only visible & uncahed are in chunk list
         for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (fluidChunk.isAlive() && !fluidChunk.isBuffered()) {
+            if (!fluidChunk.isBuffered()) {
                 fluidChunk.bufferAll();
-            } else if (!fluidChunk.isAlive() && fluidChunk.isBuffered()) {
-                fluidChunk.unbuffer();
-            } else if (fluidChunk.isAlive() && fluidChunk.isBuffered()) {
-                fluidChunk.prepare();
-                fluidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
             }
+
+            fluidChunk.prepare();
+            fluidChunk.render(ShaderProgram.getMainShader(), obsCamera.getPos());
         }
 
         Block editorNew = Editor.getSelectedNew();
