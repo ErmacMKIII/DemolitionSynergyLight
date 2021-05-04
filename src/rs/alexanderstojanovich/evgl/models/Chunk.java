@@ -62,11 +62,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     private static final byte[] MEMORY = new byte[0x100000];
     private static int pos = 0;
-    private boolean cached = false;
 
     private int timeToLive = 0;
-
-    private int cachedSize = 0;
 
     public Chunk(int id, boolean solid) {
         this.id = id;
@@ -112,14 +109,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // hint that stuff should be buffered again
     public void unbuffer() {
-        if (!cached) {
+        if (!Chunk.isCached(id, solid)) {
             buffered = false;
         }
     }
 
     // renderer does this stuff prior to any rendering
     public void bufferAll() {
-        if (!cached) {
+        if (!Chunk.isCached(id, solid)) {
             blocks.bufferAll();
             buffered = true;
         }
@@ -195,7 +192,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public int loadedSize() { // for debugging purposes
         int size = 0;
-        if (!cached) {
+        if (!Chunk.isCached(id, solid)) {
             size += blocks.getBlockList().size();
         }
         return size;
@@ -277,7 +274,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public void saveToDisk() {
-        if (!cached) {
+        if (!Chunk.isCached(id, solid)) {
             List<Block> blocks = getBlockList();
             pos = 0;
             MEMORY[pos++] = (byte) id;
@@ -307,14 +304,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
             saveMemToDisk(getFileName());
 
-            cachedSize = blocks.size();
-
-            cached = true;
         }
     }
 
     public void loadFromDisk() {
-        if (cached) {
+        if (Chunk.isCached(id, solid)) {
             loadDiskToMem(getFileName());
             pos = 1;
             int len = ((MEMORY[pos + 1] & 0xFF) << 8) | (MEMORY[pos] & 0xFF);
@@ -339,15 +333,12 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Block block = new Block(texName, blockPos, blockCol, solid);
                 addBlock(block, false);
             }
-            cached = false;
 
-            cachedSize = 0;
         }
     }
 
     public static Chunk loadFromDisk(int chunkId, boolean solid) {
         Chunk chunk = new Chunk(chunkId, solid);
-        chunk.cached = true;
         chunk.loadFromDisk();
         return chunk;
     }
@@ -426,24 +417,12 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return pos;
     }
 
-    public boolean isCached() {
-        return cached;
-    }
-
     public int getTimeToLive() {
         return timeToLive;
     }
 
     public void setTimeToLive(int timeToLive) {
         this.timeToLive = timeToLive;
-    }
-
-    public int getCachedSize() {
-        return cachedSize;
-    }
-
-    public void setCachedSize(int cachedSize) {
-        this.cachedSize = cachedSize;
     }
 
     public void decTimeToLive() {
