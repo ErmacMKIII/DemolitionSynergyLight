@@ -45,7 +45,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     public void animate() { // call only for fluid blocks
         for (Block block : blockList) {
             block.animate();
-            block.bufferAll();
+            block.bufferVertices();
         }
     }
 

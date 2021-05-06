@@ -19,7 +19,6 @@ package rs.alexanderstojanovich.evgl.level;
 import java.util.List;
 import org.joml.Random;
 import org.joml.SimplexNoise;
-import org.joml.Vector2f;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.models.Model;
