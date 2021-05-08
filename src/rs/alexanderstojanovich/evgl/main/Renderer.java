@@ -29,7 +29,6 @@ import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
-import rs.alexanderstojanovich.evgl.util.MathUtils;
 
 /**
  *
@@ -68,8 +67,7 @@ public class Renderer extends Thread implements Executor {
 
         double lastTime = GLFW.glfwGetTime();
         double currTime;
-        double deltaTime1 = 0.0;
-        double deltaTime2 = 0.0;
+        double deltaTime = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             // changing resolution if necessary
@@ -84,14 +82,13 @@ public class Renderer extends Thread implements Executor {
             }
 
             currTime = GLFW.glfwGetTime();
-            deltaTime1 = deltaTime2;
-            deltaTime2 = currTime - lastTime;
+            deltaTime = currTime - lastTime;
 
-            fpsTicks += MathUtils.lerp(deltaTime2, deltaTime1, 0.5) * Game.getFpsMax();
+            fpsTicks += deltaTime * Game.getFpsMax();
             lastTime = currTime;
 
             // Detecting critical status
-            if (fps == 0 && deltaTime2 > Game.CRITICAL_TIME) {
+            if (fps == 0 && deltaTime > Game.CRITICAL_TIME) {
                 DSLogger.reportFatalError("Game status critical!", null);
                 GameObject.MY_WINDOW.close();
                 break;
