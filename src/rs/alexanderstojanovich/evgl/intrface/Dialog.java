@@ -23,6 +23,7 @@ import org.lwjgl.glfw.GLFWKeyCallback;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.GameObject;
+import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
@@ -116,12 +117,12 @@ public abstract class Dialog {
         }
     }
 
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             if (!dialog.isBuffered()) {
                 dialog.buffer();
             }
-            dialog.render();
+            dialog.render(shaderProgram);
         }
     }
 

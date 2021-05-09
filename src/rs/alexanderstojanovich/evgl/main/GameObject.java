@@ -23,6 +23,7 @@ import rs.alexanderstojanovich.evgl.critter.Critter;
 import rs.alexanderstojanovich.evgl.intrface.Intrface;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.level.RandomLevelGenerator;
+import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
  *
@@ -75,7 +76,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      *
      * @param deltaTime game object environment update time
      */
-    public void update(float deltaTime) {
+    public synchronized void update(float deltaTime) {
         if (!levelContainer.isWorking()) { // working check avoids locking the monitor
             levelContainer.update(deltaTime);
         }
@@ -97,7 +98,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
             intrface.getProgText().setEnabled(false);
         }
         intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-        intrface.render();
+        intrface.render(ShaderProgram.getIntrfaceShader());
         MY_WINDOW.render();
     }
 

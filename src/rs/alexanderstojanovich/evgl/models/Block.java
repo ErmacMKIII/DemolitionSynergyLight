@@ -21,7 +21,6 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
-import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -91,32 +90,19 @@ public class Block extends Model {
         readFromTxtFile("cube.txt");
     }
 
-    public Block() {
-        super();
-        Arrays.fill(enabledFaces, true);
-        deepCopyTo(vertices);
-        indices = new ArrayList<>(INDICES);
-        calcDims();
-    }
-
     public Block(String texName) {
-        super();
-        this.texName = texName;
+        super("block.txt", texName);
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices);
-        indices = new ArrayList<>(INDICES);
+        indices.addAll(INDICES);
         calcDims();
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super();
-        this.texName = texName;
+        super("block.txt", texName, pos, primaryColor, solid);
         Arrays.fill(enabledFaces, true);
-        this.pos = pos;
-        this.primaryColor = primaryColor;
-        this.solid = solid;
         deepCopyTo(vertices);
-        indices = new ArrayList<>(INDICES);
+        indices.addAll(INDICES);
         calcDims();
     }
 
@@ -166,33 +152,7 @@ public class Block extends Model {
         }
     }
 
-    public void bufferVertices() {
-        // storing vertices and FACE_NORMALS in the buffer
-        FloatBuffer fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
-        for (Vertex vertex : vertices) {
-            if (vertex.isEnabled()) {
-                fb.put(vertex.getPos().x);
-                fb.put(vertex.getPos().y);
-                fb.put(vertex.getPos().z);
-
-                fb.put(vertex.getNormal().x);
-                fb.put(vertex.getNormal().y);
-                fb.put(vertex.getNormal().z);
-
-                fb.put(vertex.getUv().x);
-                fb.put(vertex.getUv().y);
-            }
-        }
-        fb.flip();
-        // storing vertices and FACE_NORMALS buffer on the graphics card
-        if (vbo == 0) {
-            vbo = GL15.glGenBuffers();
-        }
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
-        GL15.glBufferData(GL15.GL_ARRAY_BUFFER, fb, GL15.GL_STATIC_DRAW);
-        GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
-    }
-
+    @Override
     public void bufferIndices() {
         // storing indices in the buffer
         IntBuffer ib = createIntBuffer(getFaceBits());
@@ -268,7 +228,7 @@ public class Block extends Model {
             Vector3f vx = normal.add(this.pos, temp1).normalize(temp1);
             Vector3f temp2 = new Vector3f();
             Vector3f vy = front.add(pos, temp2).normalize(temp2);
-            if (Math.abs(vx.dot(vy)) >= 0.1f) {
+            if (Math.abs(vx.dot(vy)) >= 0.25f) {
                 counter++;
                 break;
             }

@@ -29,6 +29,7 @@ import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.main.Renderer;
+import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
@@ -175,14 +176,14 @@ public class Console {
         }
     }
 
-    public void render() {
+    public void render(ShaderProgram shaderProgram) {
         if (enabled) {
             panel.setWidth(GameObject.MY_WINDOW.getWidth());
             panel.setHeight(GameObject.MY_WINDOW.getHeight() / 2);
             if (!panel.isBuffered()) {
-                panel.buffer();
+                panel.bufferAll();
             }
-            panel.render();
+            panel.render(shaderProgram);
             inText.pos.x = -1.0f;
             inText.pos.y = 0.5f - panel.getPos().y + inText.getRelativeCharHeight();
             inText.alignToNextChar(); // this changes both pos.x and pos.y for inText
@@ -190,7 +191,7 @@ public class Console {
             if (!inText.isBuffered()) {
                 inText.buffer();
             }
-            inText.render();
+            inText.render(shaderProgram);
             int index = 0;
             for (Pair<Text, Quad> item : history) {
                 Text text = item.getKey();
@@ -202,18 +203,18 @@ public class Console {
                 if (!text.isBuffered()) {
                     text.buffer();
                 }
-                text.render();
+                text.render(shaderProgram);
                 if (!quad.isBuffered()) {
-                    quad.buffer();
+                    quad.bufferAll();
                 }
-                quad.render();
+                quad.render(shaderProgram);
                 index++;
             }
 
             if (!completes.isBuffered()) {
                 completes.buffer();
             }
-            completes.render();
+            completes.render(shaderProgram);
         }
     }
 
