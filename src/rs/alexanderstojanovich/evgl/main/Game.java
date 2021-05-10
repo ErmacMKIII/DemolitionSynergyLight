@@ -425,6 +425,8 @@ public class Game {
         double deltaTime;
         double acc = 0.0; // accumulator
 
+        int index = 0; // track index
+
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
@@ -441,6 +443,13 @@ public class Game {
 
             while (upsTicks >= 1.0) {
                 GLFW.glfwPollEvents();
+                if (!gameObject.musicPlayer.isPlaying()) {
+                    gameObject.musicPlayer.play(AudioFile.TRACKS[index++], false);
+
+                    if (index == AudioFile.TRACKS.length) {
+                        index = 0;
+                    }
+                }
                 gameObject.determineVisibleChunks();
                 gameObject.update((float) (upsTicks / TPS));
                 if (currentMode == Mode.SINGLE_PLAYER) {

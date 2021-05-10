@@ -37,15 +37,15 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
 
-    private final LevelContainer levelContainer;
-    private final RandomLevelGenerator randomLevelGenerator;
+    protected final LevelContainer levelContainer;
+    protected final RandomLevelGenerator randomLevelGenerator;
 
-    private final Intrface intrface;
+    protected final Intrface intrface;
 
-    private final AudioPlayer musicPlayer = new AudioPlayer();
-    private final AudioPlayer soundFXPlayer = new AudioPlayer();
+    protected final AudioPlayer musicPlayer = new AudioPlayer();
+    protected final AudioPlayer soundFXPlayer = new AudioPlayer();
 
-    private boolean assertCollision = false;
+    protected boolean assertCollision = false;
 
     // everyone can access only one instance of the game object
     private static GameObject instance;
