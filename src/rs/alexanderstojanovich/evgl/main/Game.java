@@ -451,7 +451,7 @@ public class Game {
                     }
                 }
                 gameObject.determineVisibleChunks();
-                gameObject.update((float) (upsTicks / TPS));
+                gameObject.update((float) (Math.floorMod(Math.round(upsTicks), TPS)));
                 if (currentMode == Mode.SINGLE_PLAYER) {
                     playerDo();
                     observerDo();
