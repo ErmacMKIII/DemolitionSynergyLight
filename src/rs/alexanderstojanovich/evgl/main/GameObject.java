@@ -89,7 +89,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * only from renderer)
      */
     public synchronized void render() {
-        MasterRenderer.render(); // it clears color bit and depth buffer bit
+        MasterRenderer.render(); // it clears color bit and depth bufferAll bit
         if (levelContainer.isWorking()) { // working check avoids locking the monitor
             intrface.getProgText().setEnabled(true);
             intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
