@@ -60,10 +60,19 @@ public class Chunks {
 
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
+            int faceBitsBefore = fluidBlock.getFaceBits();
             Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
             if (pair != null) {
                 byte neighborBits = pair.getValue();
-                fluidBlock.setFaceBits(~neighborBits & 63, false);
+                fluidBlock.setFaceBits(~neighborBits & 63);
+                int faceBitsAfter = fluidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    int chunkId = Chunk.chunkFunc(fluidBlock.getPos());
+                    Chunk fluidChunk = getChunk(chunkId);
+                    if (fluidChunk != null) {
+                        fluidChunk.transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+                    }
+                }
             }
         }
     }
@@ -90,6 +99,10 @@ public class Chunks {
 
         if (chunk != null) { // if chunk exists already                            
             chunk.removeBlock(block, useLevelContainer);
+            // if chunk is empty (with no tuples) -> remove it
+            if (chunk.getTupleList().isEmpty()) {
+                chunkList.remove(chunk);
+            }
         }
     }
 
@@ -268,8 +281,10 @@ public class Chunks {
 
     @Deprecated
     public void setCameraInFluid(boolean cameraInFluid) {
-        for (Chunk chunk : chunkList) {
-            chunk.getBlocks().setCameraInFluid(cameraInFluid);
+        for (Chunk chunk : getChunkList()) {
+            for (Tuple tuple : chunk.getTupleList()) {
+                tuple.setCameraInFluid(cameraInFluid);
+            }
         }
     }
 }

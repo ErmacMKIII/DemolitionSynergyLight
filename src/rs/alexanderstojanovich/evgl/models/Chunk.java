@@ -27,10 +27,10 @@ import java.util.List;
 import java.util.Queue;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
@@ -42,9 +42,9 @@ import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 public class Chunk implements Comparable<Chunk> { // some operations are mutually exclusive    
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
-    public static final float BOUND = LevelContainer.SKYBOX_WIDTH; // MAX BOUND
+    public static final int BOUND = Math.round(LevelContainer.SKYBOX_WIDTH); // modulator
     public static final float VISION = 100.0f; // determines visibility
-    public static final int MULTIPLIER = 8; // NUMBER OF CHUNKS IS 2 * VAL + 1
+    public static final int MULTIPLIER = 8; // NUMBER OF CHUNKS IS 2 * MULTIPLIER + 1
 
     // id of the chunk (signed)
     private final int id;
@@ -52,9 +52,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // is a group of blocks which are prepared for instanced rendering
     // where each tuple is considered as:                
-    private final Blocks blocks = new Blocks();
-
-    private Texture waterTexture;
+    //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
+    //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
+    private final List<Tuple> tupleList = new GapList<>();
 
     private boolean buffered = false;
 
@@ -73,18 +73,67 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return Chunks.COMPARATOR.compare(this, o);
     }
 
+    private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
+        Tuple result = null;
+        for (Tuple tuple : tupleList) {
+            if (tuple.getTexName().equals(keyTexture)
+                    && tuple.getFaceEnBits() == keyFaceBits) {
+                result = tuple;
+                break;
+            }
+        }
+        return result;
+    }
+
+    public void transfer(Block fluidBlock, int formFaceBits, int currFaceBits) { // update fluids use this to transfer fluid blocks between tuples
+        String fluidTexture = fluidBlock.texName;
+
+        Tuple srcTuple = getTuple(fluidTexture, formFaceBits);
+        if (srcTuple != null) { // lazy aaah!
+            srcTuple.getBlockList().remove(fluidBlock);
+            if (srcTuple.getBlockList().isEmpty()) {
+                tupleList.remove(srcTuple);
+            }
+        }
+
+        Tuple dstTuple = getTuple(fluidTexture, currFaceBits);
+        if (dstTuple == null) {
+            dstTuple = new Tuple(fluidTexture, currFaceBits);
+            tupleList.add(dstTuple);
+        }
+        List<Block> blockList = dstTuple.getBlockList();
+        blockList.add(fluidBlock);
+        blockList.sort(Block.Y_AXIS_COMP);
+
+        buffered = false;
+    }
+
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
+            int faceBitsBefore = fluidBlock.getFaceBits();
             Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
             if (pair != null) {
                 byte neighborBits = pair.getValue();
-                fluidBlock.setFaceBits(~neighborBits & 63, false);
+                fluidBlock.setFaceBits(~neighborBits & 63);
+                int faceBitsAfter = fluidBlock.getFaceBits();
+                if (faceBitsBefore != faceBitsAfter) { // if bits changed, i.e. some face(s) got disabled
+                    transfer(fluidBlock, faceBitsBefore, faceBitsAfter);
+                }
             }
         }
     }
 
     public void addBlock(Block block, boolean useLevelContainer) {
-        List<Block> blockList = blocks.getBlockList();
+        String blockTexture = block.texName;
+        int blockFaceBits = block.getFaceBits();
+        Tuple tuple = getTuple(blockTexture, blockFaceBits);
+
+        if (tuple == null) {
+            tuple = new Tuple(blockTexture, blockFaceBits);
+            tupleList.add(tuple);
+        }
+
+        List<Block> blockList = tuple.getBlockList();
         blockList.add(block);
         blockList.sort(Block.Y_AXIS_COMP);
 
@@ -96,13 +145,21 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public void removeBlock(Block block, boolean useLevelContainer) {
-        blocks.getBlockList().remove(block);
+        String blockTexture = block.texName;
+        int blockFaceBits = block.getFaceBits();
+        Tuple target = getTuple(blockTexture, blockFaceBits);
+        if (target != null) {
+            target.getBlockList().remove(block);
+            buffered = false;
+            // if tuple has no blocks -> remove it
+            if (target.getBlockList().isEmpty()) {
+                tupleList.remove(target);
+            }
 
-        if (useLevelContainer) {
-            LevelContainer.removeBlock(block);
+            if (useLevelContainer) {
+                LevelContainer.removeBlock(block);
+            }
         }
-
-        buffered = false;
     }
 
     // hint that stuff should be buffered again
@@ -115,41 +172,65 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     // renderer does this stuff prior to any rendering
     public void bufferAll() {
         if (!Chunk.isCached(id, solid)) {
-            blocks.bufferAll();
+            for (Tuple tuple : tupleList) {
+                tuple.bufferAll();
+            }
             buffered = true;
         }
     }
 
     public void animate() { // call only for fluid blocks
-        blocks.animate();
+        for (Tuple tuple : tupleList) {
+            tuple.animate();
+        }
     }
 
     public void prepare() { // call only for fluid blocks before rendering        
-        blocks.prepare();
+        for (Tuple tuple : tupleList) {
+            tuple.prepare();
+        }
     }
 
     // set camera in fluid for underwater effects (call only for fluid)
     public void setCameraInFluid(boolean cameraInFluid) {
-        blocks.setCameraInFluid(cameraInFluid);
-    }
-
-    // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (shaderProgram != null) {
-            blocks.render(shaderProgram, lightSrc);
+        for (Tuple tuple : tupleList) {
+            tuple.setCameraInFluid(cameraInFluid);
         }
     }
 
     // it renders all of them instanced if they're visible
+    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
+            for (Tuple tuple : tupleList) {
+                tuple.render(shaderProgram, lightSrc);
+            }
+        }
+    }
+
     public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (shaderProgram != null) {
-            blocks.renderIf(shaderProgram, lightSrc, predicate);
+        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
+            for (Tuple tuple : tupleList) {
+                tuple.renderIf(shaderProgram, lightSrc, predicate);
+            }
+        }
+    }
+
+    // deallocates Chunk from graphic card
+    @Deprecated
+    public void release() {
+        if (!Chunk.isCached(id, solid)) {
+            //--------------------------MODULATOR--------DIVIDER--------VISION-------D--------E-----------------------------
+            //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
+            for (Tuple tuple : tupleList) {
+                tuple.release();
+            }
+            buffered = false;
         }
     }
 
     // determine chunk (where am I)
     public static int chunkFunc(Vector3f pos) {
-        final int cid = Math.round(MULTIPLIER * (pos.x + pos.y + pos.z) / (3.0f * BOUND));
+        final int cid = Math.round(MULTIPLIER * (pos.x + pos.y + pos.z) / (float) (3 * BOUND));
         return cid;
     }
 
@@ -166,7 +247,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
         // this is for other chunks
-        for (int id = -MULTIPLIER; id <= MULTIPLIER; id++) {
+        for (int id = -Chunk.MULTIPLIER; id <= Chunk.MULTIPLIER; id++) {
             Vector3f chunkPos = chunkInverFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);
@@ -183,7 +264,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public int loadedSize() { // for debugging purposes
         int size = 0;
         if (!Chunk.isCached(id, solid)) {
-            size += blocks.getBlockList().size();
+            for (Tuple tuple : tupleList) {
+                size += tuple.getBlockList().size();
+            }
         }
         return size;
     }
@@ -206,7 +289,11 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public List<Block> getBlockList() {
-        return blocks.getBlockList();
+        List<Block> result = new GapList<>();
+        for (Tuple tuple : tupleList) {
+            result.addAll(tuple.getBlockList());
+        }
+        return result;
     }
 
     private void saveMemToDisk(String filename) {
@@ -285,7 +372,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
             // better than tuples clear (otherwise much slower to load)
             // this indicates that add with no transfer on fluid blocks will be used!
-            blocks.clear();
+            for (Tuple tuple : tupleList) {
+                tuple.getBlockList().clear();
+            }
 
             File cacheDir = new File(Game.CACHE);
             if (!cacheDir.exists()) {
@@ -294,6 +383,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
             saveMemToDisk(getFileName());
 
+            tupleList.clear();
         }
     }
 
@@ -323,7 +413,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 Block block = new Block(texName, blockPos, blockCol, solid);
                 addBlock(block, false);
             }
-
         }
     }
 
@@ -379,16 +468,8 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         return solid;
     }
 
-    public Blocks getBlocks() {
-        return blocks;
-    }
-
-    public Texture getWaterTexture() {
-        return waterTexture;
-    }
-
-    public void setWaterTexture(Texture waterTexture) {
-        this.waterTexture = waterTexture;
+    public List<Tuple> getTupleList() {
+        return tupleList;
     }
 
     public boolean isBuffered() {

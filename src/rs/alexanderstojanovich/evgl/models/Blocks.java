@@ -28,12 +28,12 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    private final List<Block> blockList = new BigList<>(5000);
-    private boolean cameraInFluid = false;
-    private boolean verticesReversed = false;
+    protected final List<Block> blockList = new BigList<>(5000);
+    protected boolean cameraInFluid = false;
+    protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
-    private boolean buffered = false;
+    protected boolean buffered = false;
 
     public void bufferAll() { // buffer both, call it before any rendering
         for (Block block : blockList) {
