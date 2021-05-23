@@ -560,7 +560,6 @@ public class LevelContainer implements GravityEnviroment {
         }
     }
 
-    @Deprecated
     public boolean isCameraInFluid() {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
@@ -704,11 +703,8 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
-            Vector3f camPos = levelActors.getPlayer().getCamera().getPos();
             for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                if (Chunk.invChunkFunc(fluidChunk.getId()).distance(camPos) <= Chunk.VISION) {
-                    fluidChunk.tstCameraInFluid(camPos);
-                }
+                fluidChunk.setCameraInFluid(isCameraInFluid());
             }
         }
     }
