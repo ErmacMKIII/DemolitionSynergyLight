@@ -27,6 +27,7 @@ import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.function.Predicate;
@@ -59,17 +60,22 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks(true);
     private final Chunks fluidChunks = new Chunks(false);
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 8;
+    public static final int VIPAIR_QUEUE_CAPACITY = 6;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
-            if (o1.getValue() > o2.getValue()) {
-                return 1;
-            } else if (o1.getValue() == o2.getValue()) {
+            if (o1 == null || o2 == null) {
                 return 0;
             } else {
-                return -1;
+                if (o1.getValue() > o2.getValue()) {
+                    return 1;
+                } else if (Objects.equals(o1.getValue(), o2.getValue())) {
+                    return 0;
+                } else {
+                    return -1;
+                }
             }
+
         }
     };
 
@@ -100,7 +106,7 @@ public class LevelContainer implements GravityEnviroment {
     public static final Map<Integer, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
 
     // std time to live
-    public static final int STD_TTL = 30; // 40 seconds
+    public static final int STD_TTL = 30; // 30 seconds
 
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
@@ -247,7 +253,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -3.0f));
+        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, 0.0f, -4.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
         levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
         levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
@@ -268,6 +274,13 @@ public class LevelContainer implements GravityEnviroment {
         }
         working = true;
         levelActors.freeze();
+
+        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, Chunk.BOUND >> 1, -4.0f));
+        levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
+        levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
+        levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
+        levelActors.getPlayer().getCamera().calcViewMatrixPub();
+
         boolean success = false;
         progress = 0.0f;
         gameObject.getMusicPlayer().play(AudioFile.RANDOM, true);
@@ -289,6 +302,7 @@ public class LevelContainer implements GravityEnviroment {
 
         progress = 100.0f;
         working = false;
+
         levelActors.unfreeze();
         gameObject.getMusicPlayer().stop();
         return success;
@@ -564,13 +578,26 @@ public class LevelContainer implements GravityEnviroment {
         boolean yea = false;
         Vector3f obsCamPos = levelActors.getPlayer().getCamera().getPos();
 
-        int currChunkId = Chunk.chunkFunc(obsCamPos);
-        Chunk currFluidChunk = fluidChunks.getChunk(currChunkId);
-        if (currFluidChunk != null) {
-            for (Block fluidBLock : currFluidChunk.getBlockList()) {
-                if (fluidBLock.containsInsideEqually(obsCamPos)) {
-                    yea = true;
-                    break;
+        final float atps = Game.AMOUNT * Game.TPS;
+
+        OUTER:
+        for (float amount = -atps; amount <= atps; amount += Game.AMOUNT) {
+            for (int j = 0; j <= 5; j++) {
+                Vector3f adjPos = Block.getAdjacentPos(obsCamPos, j, amount);
+                Vector3f align = new Vector3f(
+                        Math.round(adjPos.x) & 0xFFFFFFFE,
+                        Math.round(adjPos.y) & 0xFFFFFFFE,
+                        Math.round(adjPos.z) & 0xFFFFFFFE
+                );
+
+                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(align));
+
+                if (fluidOnLoc) {
+                    yea = Block.containsInsideEqually(align, 2.0f, 2.0f, 2.0f, obsCamPos);
+
+                    if (yea) {
+                        break OUTER;
+                    }
                 }
             }
         }
@@ -587,7 +614,7 @@ public class LevelContainer implements GravityEnviroment {
             final float atps = Game.AMOUNT * Game.TPS;
 
             OUTER:
-            for (float amount = -atps; amount <= atps; amount += Game.AMOUNT / 8.0f) {
+            for (float amount = -atps; amount <= atps; amount += Game.AMOUNT) {
                 for (int j = 0; j <= 5; j++) {
                     Vector3f adjPos = Block.getAdjacentPos(critter.getPredictor(), j, amount);
                     Vector3f align = new Vector3f(
