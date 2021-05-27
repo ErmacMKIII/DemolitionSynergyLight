@@ -187,16 +187,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering        
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering        
         for (Tuple tuple : tupleList) {
-            tuple.prepare();
-        }
-    }
-
-    // set camera in fluid for underwater effects (call only for fluid)
-    public void setCameraInFluid(boolean cameraInFluid) {
-        for (Tuple tuple : tupleList) {
-            tuple.setCameraInFluid(cameraInFluid);
+            tuple.prepare(cameraInFluid);
         }
     }
 
@@ -457,17 +450,6 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             }
         }
         return yea;
-    }
-
-    public void tstCameraInFluid(Vector3f camPos) {
-        boolean yea = false;
-        for (Block fluidBLock : getBlockList()) {
-            if (fluidBLock.containsInsideEqually(camPos)) {
-                yea = true;
-                break;
-            }
-        }
-        setCameraInFluid(yea);
     }
 
     public int getId() {

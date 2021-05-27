@@ -108,6 +108,8 @@ public class LevelContainer implements GravityEnviroment {
     // std time to live
     public static final int STD_TTL = 30; // 30 seconds
 
+    protected static boolean cameraInFluid = false;
+
     private static byte updateSolidNeighbors(Vector3f vector) {
         byte bits = 0;
         for (int j = 0; j <= 5; j++) {
@@ -743,9 +745,7 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 2048.0f);
-            for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-                fluidChunk.setCameraInFluid(isCameraInFluid());
-            }
+            cameraInFluid = isCameraInFluid();
         }
     }
 
@@ -768,24 +768,13 @@ public class LevelContainer implements GravityEnviroment {
             }
         };
 
-        // only visible & uncached are in chunk list
-        for (Chunk solidChunk : solidChunks.getChunkList()) {
-            if (!solidChunk.isBuffered()) {
-                solidChunk.bufferAll();
-            }
+        // only visible & uncached are in chunk list      
+        solidChunks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
 
-            solidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
-        }
-
-        // only visible & uncahed are in chunk list
-        for (Chunk fluidChunk : fluidChunks.getChunkList()) {
-            if (!fluidChunk.isBuffered()) {
-                fluidChunk.bufferAll();
-            }
-
-            fluidChunk.prepare();
-            fluidChunk.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
-        }
+        // prepare alters tex coords based on whether or not camera is submerged in fluid
+        fluidChunks.prepare(cameraInFluid);
+        // only visible & uncached are in chunk list 
+        fluidChunks.renderIf(ShaderProgram.getMainShader(), obsCamera.getPos(), predicate);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {

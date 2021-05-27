@@ -144,7 +144,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     }
 
     @Override
-    public void prepare() {
+    public void prepare(boolean cameraInFluid) {
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             Block.reverseFaceVertexOrder(vertices);
             verticesReversed = !verticesReversed;
@@ -154,7 +154,11 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     @Override
     public void animate() {
         Block.animate(vertices, Block.INDICES);
-        updateVertices();
+        if (fb == null) {
+            bufferVertices();
+        } else {
+            updateVertices();
+        }
     }
 
     public List<Vertex> getVertices() {

@@ -29,7 +29,6 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
     protected final List<Block> blockList = new BigList<>(5000);
-    protected boolean cameraInFluid = false;
     protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold
@@ -49,7 +48,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
         }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering
         if (Boolean.logicalXor(cameraInFluid, verticesReversed)) {
             for (Block block : blockList) {
                 block.reverseFaceVertexOrder();
@@ -90,14 +89,6 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
 
     public boolean isVerticesReversed() {
         return verticesReversed;
-    }
-
-    public boolean isCameraInFluid() {
-        return cameraInFluid;
-    }
-
-    public void setCameraInFluid(boolean cameraInFluid) {
-        this.cameraInFluid = cameraInFluid;
     }
 
     public void setVerticesReversed(boolean verticesReversed) {

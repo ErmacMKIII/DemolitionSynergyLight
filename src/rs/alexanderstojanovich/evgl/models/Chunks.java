@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evgl.models;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
+import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
@@ -34,7 +35,6 @@ import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 public class Chunks {
 
     private final boolean solid;
-    private boolean buffered = false;
     // single mat4Vbo is for model matrix shared amongst the vertices of the same instance    
     // single vec4Vbo is color shared amongst the vertices of the same instance    
     //--------------------------A--------B--------C-------D--------E-----------------------------
@@ -143,26 +143,29 @@ public class Chunks {
         }
     }
 
-    public void prepare() { // call only for fluid blocks before rendering        
+    public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering        
         for (Chunk chunk : chunkList) {
-            chunk.prepare();
+            chunk.prepare(cameraInFluid);
         }
-    }
-
-    // buffer all -> deprecated cuz it's not good use!
-    @Deprecated
-    public void bufferAll() {
-        for (Chunk chunk : chunkList) {
-            chunk.bufferAll();
-        }
-        buffered = true;
     }
 
     // for each instanced rendering
-    @Deprecated
     public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
         for (Chunk chunk : chunkList) {
+            if (!chunk.isBuffered()) {
+                chunk.bufferAll();
+            }
             chunk.render(shaderProgram, lightSrc);
+        }
+    }
+
+    // for each instanced rendering
+    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+        for (Chunk chunk : chunkList) {
+            if (!chunk.isBuffered()) {
+                chunk.bufferAll();
+            }
+            chunk.renderIf(shaderProgram, lightSrc, predicate);
         }
     }
 
@@ -268,23 +271,4 @@ public class Chunks {
         return chunkList;
     }
 
-    public boolean isBuffered() {
-        return buffered;
-    }
-
-    public void setBuffered(boolean buffered) {
-        this.buffered = buffered;
-        for (Chunk chunk : getChunkList()) {
-            chunk.setBuffered(buffered);
-        }
-    }
-
-    @Deprecated
-    public void setCameraInFluid(boolean cameraInFluid) {
-        for (Chunk chunk : getChunkList()) {
-            for (Tuple tuple : chunk.getTupleList()) {
-                tuple.setCameraInFluid(cameraInFluid);
-            }
-        }
-    }
 }
