@@ -70,8 +70,8 @@ public class Main {
             }
         };
 
-        timer.scheduleAtFixedRate(task1, 1000L, 1000L);
-        timer.scheduleAtFixedRate(task2, 125L, 125L);
+        timer.schedule(task1, 1000L, 1000L);
+        timer.schedule(task2, 125L, 125L);
         SERVICE.execute(new Runnable() {
             @Override
             public void run() {
