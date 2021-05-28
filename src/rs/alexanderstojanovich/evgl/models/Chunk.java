@@ -250,7 +250,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         int cid = chunkFunc(actorPos);
         Vector3f temp = new Vector3f();
         // this is for other chunks
-        for (int id = 0; id <= Chunk.CHUNK_NUM; id++) {
+        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Vector3f chunkPos = invChunkFunc(id);
             float product = chunkPos.sub(actorPos, temp).normalize(temp).dot(actorFront);
             float distance = chunkPos.distance(actorPos);

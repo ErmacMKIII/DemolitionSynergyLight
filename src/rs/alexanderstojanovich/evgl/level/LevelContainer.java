@@ -764,7 +764,7 @@ public class LevelContainer implements GravityEnviroment {
             @Override
             public boolean test(Block t) {
                 return (t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())
-                        && obsCamera.doesSee(t));
+                        /*&& obsCamera.doesSee(t)*/);
             }
         };
 
