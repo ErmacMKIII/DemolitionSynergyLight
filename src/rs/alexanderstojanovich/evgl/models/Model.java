@@ -281,8 +281,6 @@ public class Model implements Comparable<Model> {
             return; // this is very critical!!
         }
 
-        Texture.enable();
-
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -316,7 +314,6 @@ public class Model implements Comparable<Model> {
         GL20.glDisableVertexAttribArray(2);
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
-        Texture.disable();
     }
 
     /**

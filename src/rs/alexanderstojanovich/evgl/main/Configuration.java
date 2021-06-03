@@ -41,6 +41,19 @@ public class Configuration {
     private float soundFXVolume = 0.5f;
     private static final String CONFIG_PATH = "dsynergy_light.ini";
 
+    private static Configuration instance;
+
+    public static Configuration getInstance() {
+        if (instance == null) {
+            instance = new Configuration();
+        }
+        return instance;
+    }
+
+    private Configuration() {
+
+    }
+
     // reads configuration from the .ini file
     public void readConfigFile() {
         File cfg = new File(CONFIG_PATH);

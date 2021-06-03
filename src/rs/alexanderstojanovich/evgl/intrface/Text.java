@@ -210,7 +210,6 @@ public class Text implements ComponentIfc {
     @Override
     public void render(ShaderProgram shaderProgram) {
         if (enabled && buffered) {
-            Texture.enable();
             GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -239,7 +238,6 @@ public class Text implements ComponentIfc {
             GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
             GL20.glDisableVertexAttribArray(0);
             GL20.glDisableVertexAttribArray(1);
-            Texture.disable();
         }
     }
 

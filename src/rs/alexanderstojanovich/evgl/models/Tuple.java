@@ -62,7 +62,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
 
     public void bufferVertices() {
         fb = BufferUtils.createFloatBuffer(vertices.size() * Vertex.SIZE);
-        for (Vertex vertex : Block.VERTICES) {
+        for (Vertex vertex : vertices) {
             if (vertex.isEnabled()) {
                 fb.put(vertex.getPos().x);
                 fb.put(vertex.getPos().y);
