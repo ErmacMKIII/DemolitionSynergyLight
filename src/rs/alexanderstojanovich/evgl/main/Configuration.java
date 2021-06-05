@@ -35,10 +35,13 @@ public class Configuration {
     private int height = 480;
     private boolean fullscreen = false;
     private boolean vsync = false;
+    private boolean waterEffects = true;
     private float mouseSensitivity = 1.5f;
     private boolean debug = false;
     private float musicVolume = 0.5f;
     private float soundFXVolume = 0.5f;
+    private int textureSize = 512;
+
     private static final String CONFIG_PATH = "dsynergy_light.ini";
 
     private static Configuration instance;
@@ -65,6 +68,8 @@ public class Configuration {
                 while ((line = br.readLine()) != null) {
                     // replace all white space chars with empty string
                     String[] words = line.replaceAll("\\s", "").split("=");
+                    int number;
+                    float val;
                     if (words.length == 2) {
                         switch (words[0].toLowerCase()) {
                             case "fpscap":
@@ -83,16 +88,32 @@ public class Configuration {
                                 vsync = Boolean.parseBoolean(words[1].toLowerCase());
                                 break;
                             case "mousesensitivity":
-                                mouseSensitivity = Float.parseFloat(words[1]);
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.05f && val <= 20.0f) {
+                                    mouseSensitivity = val;
+                                }
                                 break;
                             case "musicvolume":
-                                musicVolume = Float.parseFloat(words[1]);
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.05f && val <= 20.0f) {
+                                    musicVolume = val;
+                                }
                                 break;
                             case "soundfxvolume":
-                                soundFXVolume = Float.parseFloat(words[1]);
+                                val = Float.parseFloat(words[1]);
+                                if (val >= 0.05f && val <= 20.0f) {
+                                    soundFXVolume = val;
+                                }
                                 break;
                             case "debug":
                                 debug = Boolean.parseBoolean(words[1].toLowerCase());
+                                break;
+                            case "texturesize":
+                                number = Integer.parseInt(words[1]);
+                                // if tex size is a non-zero power of two
+                                if (number != 0 && (number & (number - 1)) == 0) {
+                                    textureSize = number;
+                                }
                                 break;
                         }
                     }
@@ -127,10 +148,12 @@ public class Configuration {
             pw.println("Height = " + height);
             pw.println("Fullscreen = " + fullscreen);
             pw.println("VSync = " + vsync);
+            pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
             pw.println("SoundFXVolume = " + soundFXVolume);
             pw.println("Debug = " + debug);
+            pw.println("TextureSize = " + textureSize);
         } catch (FileNotFoundException ex) {
             DSLogger.reportFatalError(ex.getMessage(), ex);
         } finally {
@@ -180,6 +203,14 @@ public class Configuration {
         this.vsync = vsync;
     }
 
+    public boolean isWaterEffects() {
+        return waterEffects;
+    }
+
+    public void setWaterEffects(boolean waterEffects) {
+        this.waterEffects = waterEffects;
+    }
+
     public float getMouseSensitivity() {
         return mouseSensitivity;
     }
@@ -210,6 +241,10 @@ public class Configuration {
 
     public void setSoundFXVolume(float soundFXVolume) {
         this.soundFXVolume = soundFXVolume;
+    }
+
+    public int getTextureSize() {
+        return textureSize;
     }
 
 }
