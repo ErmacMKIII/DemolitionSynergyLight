@@ -210,7 +210,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // it renders all of them instanced if they're visible
     public synchronized void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
-        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
+        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0) {
             for (Tuple tuple : tupleList) {
                 tuple.render(shaderProgram, lightSrc);
             }
@@ -218,7 +218,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     public synchronized void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
-        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0.0) {
+        if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0) {
             for (Tuple tuple : tupleList) {
                 tuple.renderIf(shaderProgram, lightSrc, predicate);
             }

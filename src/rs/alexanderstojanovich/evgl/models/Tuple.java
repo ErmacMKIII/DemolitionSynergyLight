@@ -47,7 +47,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     public Tuple(String texName, int faceEnBits) {
         this.texName = texName;
         this.faceEnBits = faceEnBits;
-        Block.deepCopyTo(vertices);
+        Block.deepCopyTo(vertices, texName);
         Block.setFaceBits(vertices, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
     }

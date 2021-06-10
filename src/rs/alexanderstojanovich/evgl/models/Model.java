@@ -126,6 +126,11 @@ public class Model implements Comparable<Model> {
             return null;
         }
 
+        int texIndex = Texture.TEX_MAP.get(texName).getValue();
+        int row = texIndex / Texture.GRID_SIZE_WORLD;
+        int col = texIndex % Texture.GRID_SIZE_WORLD;
+        final float oneOver = 1.0f / (float) Texture.GRID_SIZE_WORLD;
+
         Model result = new Model(fileName, texName);
         BufferedReader br = new BufferedReader(new InputStreamReader(objInput));
         List<Vector2f> uvs = new ArrayList<>();
@@ -151,7 +156,10 @@ public class Model implements Comparable<Model> {
                         int index = Integer.parseInt(data[0]) - 1;
                         result.indices.add(index);
                         if (!data[1].isEmpty()) {
-                            result.vertices.get(index).setUv(uvs.get(Integer.parseInt(data[1]) - 1));
+                            Vertex vertex = result.vertices.get(index);
+                            vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
+                            vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
+                            vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
                         }
                         if (!data[2].isEmpty()) {
                             result.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
@@ -298,7 +306,7 @@ public class Model implements Comparable<Model> {
             useLight(shaderProgram);
             setAlpha(shaderProgram);
 
-            Texture primaryTexture = Texture.TEX_MAP.getOrDefault(texName, Texture.QMARK);
+            Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
             if (primaryTexture != null) { // this is primary texture
                 primaryColor(shaderProgram);
                 primaryTexture.bind(0, shaderProgram, "modelTexture0");
@@ -345,7 +353,7 @@ public class Model implements Comparable<Model> {
                 model.useLight(shaderProgram);
                 model.setAlpha(shaderProgram);
 
-                Texture primaryTexture = Texture.TEX_MAP.getOrDefault(model.texName, Texture.QMARK);
+                Texture primaryTexture = Texture.TEX_MAP.get(model.texName).getKey();
                 if (primaryTexture != null) { // this is primary texture
                     model.primaryColor(shaderProgram);
                     primaryTexture.bind(0, shaderProgram, "modelTexture0");
