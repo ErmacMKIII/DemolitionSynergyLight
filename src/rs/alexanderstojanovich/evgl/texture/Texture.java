@@ -41,8 +41,6 @@ import java.util.HashMap;
 import java.util.Hashtable;
 import java.util.Map;
 import java.util.Objects;
-import java.util.logging.Level;
-import java.util.logging.Logger;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 import javax.imageio.ImageIO;
@@ -186,6 +184,9 @@ public class Texture {
         CONSOLE.bufferAll();
         LIGHT_BULB.bufferAll();
         // world
+        DECAL.bufferAll();
+        MARBLE.bufferAll();
+        QMARK.bufferAll();
         WORLD.bufferAll();
         NIGHT.bufferAll();
         // player
@@ -284,9 +285,6 @@ public class Texture {
         }
         final Texture other = (Texture) obj;
         if (this.textureID != other.textureID) {
-            return false;
-        }
-        if (this.buffered != other.buffered) {
             return false;
         }
         if (!Objects.equals(this.image, other.image)) {

@@ -31,6 +31,7 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
@@ -78,8 +79,9 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     private Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         Tuple result = null;
         for (Tuple tuple : tupleList) {
-            if (tuple.getTexName().equals(keyTexture)
-                    && tuple.getFaceEnBits() == keyFaceBits) {
+            if (Texture.TEX_MAP.get(tuple.texName).getKey()
+                    .equals(Texture.TEX_MAP.get(keyTexture).getKey())
+                    && tuple.faceEnBits == keyFaceBits) {
                 result = tuple;
                 break;
             }

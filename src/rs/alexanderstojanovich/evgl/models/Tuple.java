@@ -34,15 +34,15 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     // all blocks in the tuple have the same properties, 
     // like model matrices, color and texture name, and enabled faces in 6-bit represenation
 
-    private final String texName;
-    private final int faceEnBits;
+    protected final String texName;
+    protected final int faceEnBits;
 
-    private FloatBuffer fb;
-    private int vbo = 0;
+    protected FloatBuffer fb;
+    protected int vbo = 0;
 
-    private final IntBuffer intBuff;
-    private int ibo = 0;
-    private final List<Vertex> vertices = new ArrayList<>();
+    protected final IntBuffer intBuff;
+    protected int ibo = 0;
+    protected final List<Vertex> vertices = new ArrayList<>();
 
     public Tuple(String texName, int faceEnBits) {
         this.texName = texName;

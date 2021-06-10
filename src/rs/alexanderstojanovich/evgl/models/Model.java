@@ -158,8 +158,10 @@ public class Model implements Comparable<Model> {
                         if (!data[1].isEmpty()) {
                             Vertex vertex = result.vertices.get(index);
                             vertex.setUv(uvs.get(Integer.parseInt(data[1]) - 1));
-                            vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
-                            vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
+                            if (texIndex != -1) {
+                                vertex.getUv().x = (vertex.getUv().x + row) * oneOver;
+                                vertex.getUv().y = (vertex.getUv().y + col) * oneOver;
+                            }
                         }
                         if (!data[2].isEmpty()) {
                             result.vertices.get(index).setNormal(normals.get(Integer.parseInt(data[2]) - 1));
