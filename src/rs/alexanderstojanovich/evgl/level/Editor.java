@@ -279,6 +279,7 @@ public class Editor {
             if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
                 if (selectedNew.isSolid()) { // else if block is solid
                     gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew, true);
+                    gameObject.getLevelContainer().getSolidChunks().updateSolids();
                 } else { // if block is fluid                    
                     gameObject.getLevelContainer().getFluidChunks().addBlock(selectedNew, true);
                     gameObject.getLevelContainer().getFluidChunks().updateFluids();
@@ -295,6 +296,7 @@ public class Editor {
         if (selectedCurr != null) {
             if (selectedCurr.isSolid()) {
                 gameObject.getLevelContainer().getSolidChunks().removeBlock(selectedCurr, true);
+                gameObject.getLevelContainer().getSolidChunks().updateSolids();
             } else {
                 gameObject.getLevelContainer().getFluidChunks().removeBlock(selectedCurr, true);
                 gameObject.getLevelContainer().getFluidChunks().updateFluids();
