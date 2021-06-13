@@ -16,6 +16,8 @@
  */
 package rs.alexanderstojanovich.evgl.main;
 
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.MasterRenderer;
 import rs.alexanderstojanovich.evgl.core.Window;
@@ -52,7 +54,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     // everyone can access only one instance of the game object
     private static GameObject instance;
 
-    public static final Object OBJ_MUTEX = new Object();
+    protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private GameObject() {
         this.levelContainer = new LevelContainer(this);
@@ -107,18 +109,23 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * Renderer method. Requires context to be set in the proper thread (call
      * only from renderer)
      */
-    public synchronized void render() {
-        MasterRenderer.render(); // it clears color bit and depth bufferAll bit
-        if (levelContainer.isWorking()) { // working check avoids locking the monitor
-            intrface.getProgText().setEnabled(true);
-            intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
-        } else {
-            levelContainer.render();
-            intrface.getProgText().setEnabled(false);
+    public void render() {
+        lock.readLock().lock();
+        try {
+            MasterRenderer.render(); // it clears color bit and depth bufferAll bit
+            if (levelContainer.isWorking()) { // working check avoids locking the monitor
+                intrface.getProgText().setEnabled(true);
+                intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
+            } else {
+                levelContainer.render();
+                intrface.getProgText().setEnabled(false);
+            }
+            intrface.getGameModeText().setContent(Game.getCurrentMode().name());
+            intrface.render(ShaderProgram.getIntrfaceShader());
+            MY_WINDOW.render();
+        } finally {
+            lock.readLock().unlock();
         }
-        intrface.getGameModeText().setContent(Game.getCurrentMode().name());
-        intrface.render(ShaderProgram.getIntrfaceShader());
-        MY_WINDOW.render();
     }
 
     // -------------------------------------------------------------------------
@@ -132,16 +139,26 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     /**
      * Auto load/save level container chunks
      */
-    public synchronized void chunkOperations() {
-        levelContainer.chunkOperations();
+    public void chunkOperations() {
+        lock.writeLock().lock();
+        try {
+            levelContainer.chunkOperations();
+        } finally {
+            lock.writeLock().unlock();
+        }
     }
 
     /**
      * Animation for water (and other fluids)
      *
      */
-    public synchronized void animate() {
-        levelContainer.animate();
+    public void animate() {
+        lock.readLock().lock();
+        try {
+            levelContainer.animate();
+        } finally {
+            lock.readLock().unlock();
+        }
     }
 
     // -------------------------------------------------------------------------
