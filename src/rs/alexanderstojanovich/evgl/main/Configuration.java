@@ -35,7 +35,6 @@ public class Configuration {
     private int height = 480;
     private boolean fullscreen = false;
     private boolean vsync = false;
-    private boolean waterEffects = true;
     private float mouseSensitivity = 1.5f;
     private boolean debug = false;
     private float musicVolume = 0.5f;
@@ -148,7 +147,6 @@ public class Configuration {
             pw.println("Height = " + height);
             pw.println("Fullscreen = " + fullscreen);
             pw.println("VSync = " + vsync);
-            pw.println("WaterEffects = " + waterEffects);
             pw.println("MouseSensitivity = " + mouseSensitivity);
             pw.println("MusicVolume = " + musicVolume);
             pw.println("SoundFXVolume = " + soundFXVolume);
@@ -201,14 +199,6 @@ public class Configuration {
 
     public void setVsync(boolean vsync) {
         this.vsync = vsync;
-    }
-
-    public boolean isWaterEffects() {
-        return waterEffects;
-    }
-
-    public void setWaterEffects(boolean waterEffects) {
-        this.waterEffects = waterEffects;
     }
 
     public float getMouseSensitivity() {
