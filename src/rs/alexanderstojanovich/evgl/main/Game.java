@@ -352,7 +352,7 @@ public class Game {
                     Editor.selectPrevTexture(gameObject);
                 } else if (key == GLFW.GLFW_KEY_RIGHT_BRACKET && (action == GLFW.GLFW_PRESS || action == GLFW.GLFW_REPEAT)) {
                     Editor.selectNextTexture(gameObject);
-                } else {
+                } else if (key != -1) {
                     if (action == GLFW.GLFW_PRESS) {
                         keys[key] = true;
                     } else if (action == GLFW.GLFW_RELEASE) {
