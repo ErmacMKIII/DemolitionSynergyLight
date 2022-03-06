@@ -8,9 +8,9 @@ In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and
 2. PNGDecoder (for loading PNG images),
 3. Jorbis OGG Decoder (for OGG audio files),
 4. GapList & BigList (for Block lists),
-5. Apache logger (Log4J)
+5. Apache logger (Log4J).
 
-Please download them from: http://www.mediafire.com/file/1nyvo6zqils70w7/jorbis-oggdecoder-1.1.jar/file
+Please download them from: https://www.mediafire.com/folder/4s73lh2imzew1/LIBS_March06_2022
 
 
 Testers: 13, Hellblade64;
