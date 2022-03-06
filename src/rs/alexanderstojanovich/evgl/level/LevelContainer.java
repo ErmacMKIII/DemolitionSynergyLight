@@ -60,7 +60,7 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks solidChunks = new Chunks(true);
     private final Chunks fluidChunks = new Chunks(false);
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 6;
+    public static final int VIPAIR_QUEUE_CAPACITY = 5;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -85,7 +85,7 @@ public class LevelContainer implements GravityEnviroment {
     private final byte[] buffer = new byte[0x1000000]; // 16 MB Buffer
     private int pos = 0;
 
-    public static final float BASE = 11.0f;
+    public static final float BASE = 13.0f;
     public static final float SKYBOX_SCALE = BASE * BASE * BASE;
     public static final float SKYBOX_WIDTH = 2.0f * SKYBOX_SCALE;
     public static final Vector3f SKYBOX_COLOR = new Vector3f(0.25f, 0.5f, 0.75f); // cool bluish color for SKYBOX
@@ -100,10 +100,10 @@ public class LevelContainer implements GravityEnviroment {
     private final LevelActors levelActors = new LevelActors();
 
     // position of all the solid blocks to texture name & neighbors
-    public static final Map<Integer, Pair<String, Byte>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
+    public static final Map<Vector3f, Pair<String, Byte>> ALL_SOLID_MAP = new HashMap<>(MAX_NUM_OF_SOLID_BLOCKS);
 
     // position of all the fluid blocks to texture name & neighbors
-    public static final Map<Integer, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
+    public static final Map<Vector3f, Pair<String, Byte>> ALL_FLUID_MAP = new HashMap<>(MAX_NUM_OF_FLUID_BLOCKS);
 
     // std time to live
     public static final int STD_TTL = 30; // 30 seconds
@@ -115,8 +115,7 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            int hashCodeY = Vector3fUtils.hashCode(adjPos);
-            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(hashCodeY);
+            Pair<String, Byte> adjPair = ALL_SOLID_MAP.get(adjPos);
             if (adjPair != null) {
                 bits |= mask;
                 byte adjBits = adjPair.getValue();
@@ -134,8 +133,7 @@ public class LevelContainer implements GravityEnviroment {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             Vector3f adjPos = Block.getAdjacentPos(vector, j);
-            int hashCodeY = Vector3fUtils.hashCode(adjPos);
-            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(hashCodeY);
+            Pair<String, Byte> adjPair = ALL_FLUID_MAP.get(adjPos);
             if (adjPair != null) {
                 bits |= mask;
                 byte adjBits = adjPair.getValue();
@@ -153,27 +151,24 @@ public class LevelContainer implements GravityEnviroment {
         String str = block.getTexName();
         if (block.isSolid()) {
             byte bits = updateSolidNeighbors(pos);
-            int hashCodeX = Vector3fUtils.hashCode(pos);
             Pair<String, Byte> pairX = new Pair<>(str, bits);
-            ALL_SOLID_MAP.put(hashCodeX, pairX);
+            ALL_SOLID_MAP.put(new Vector3f(pos), pairX);
         } else {
             byte bits = updateFluidNeighbors(pos);
-            int hashCodeX = Vector3fUtils.hashCode(pos);
             Pair<String, Byte> pairX = new Pair<>(str, bits);
-            ALL_FLUID_MAP.put(hashCodeX, pairX);
+            ALL_FLUID_MAP.put(new Vector3f(pos), pairX);
         }
     }
 
     public static void removeBlock(Block block) {
         Vector3f pos = block.getPos();
-        int hashCode = Vector3fUtils.hashCode(pos);
         if (block.isSolid()) {
-            Pair<String, Byte> pair = ALL_SOLID_MAP.remove(hashCode);
+            Pair<String, Byte> pair = ALL_SOLID_MAP.remove(pos);
             if (pair != null && pair.getValue() > 0) {
                 updateSolidNeighbors(pos);
             }
         } else {
-            Pair<String, Byte> pair = ALL_FLUID_MAP.remove(hashCode);
+            Pair<String, Byte> pair = ALL_FLUID_MAP.remove(pos);
             if (pair != null && pair.getValue() > 0) {
                 updateFluidNeighbors(pos);
             }
@@ -589,7 +584,7 @@ public class LevelContainer implements GravityEnviroment {
                 Math.round(obsCamPos.z + 0.5f) & 0xFFFFFFFE
         );
 
-        yea = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(obsCamPosAlign));
+        yea = ALL_FLUID_MAP.containsKey(obsCamPosAlign);
 
         if (!yea) {
             for (int j = 0; j <= 5; j++) {
@@ -600,7 +595,7 @@ public class LevelContainer implements GravityEnviroment {
                         Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                 );
 
-                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(adjAlign));
+                boolean fluidOnLoc = ALL_FLUID_MAP.containsKey(adjAlign);
 
                 if (fluidOnLoc) {
                     yea = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, obsCamPos);
@@ -628,7 +623,7 @@ public class LevelContainer implements GravityEnviroment {
                     Math.round(critter.getPredictor().z + 0.5f) & 0xFFFFFFFE
             );
 
-            coll = ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(predAlign));
+            coll = ALL_SOLID_MAP.containsKey(predAlign);
 
             if (!coll) {
                 for (int j = 0; j <= 5; j++) {
@@ -640,7 +635,7 @@ public class LevelContainer implements GravityEnviroment {
                                 Math.round(adjPos.z + 0.5f) & 0xFFFFFFFE
                         );
 
-                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(adjAlign));
+                        boolean solidOnLoc = ALL_SOLID_MAP.containsKey(adjAlign);
 
                         if (solidOnLoc) {
                             coll = Block.containsInsideEqually(adjAlign, 2.1f, 2.1f, 2.1f, critter.getPredictor())

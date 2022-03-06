@@ -61,7 +61,7 @@ public class Chunks {
     public void updateSolids() {
         for (Block solidBlock : getTotalList()) {
             int faceBitsBefore = solidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(Vector3fUtils.hashCode(solidBlock.pos));
+            Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
             if (pair != null) {
                 byte neighborBits = pair.getValue();
                 solidBlock.setFaceBits(~neighborBits & 63);
@@ -80,7 +80,7 @@ public class Chunks {
     public void updateFluids() {
         for (Block fluidBlock : getTotalList()) {
             int faceBitsBefore = fluidBlock.getFaceBits();
-            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(Vector3fUtils.hashCode(fluidBlock.pos));
+            Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
             if (pair != null) {
                 byte neighborBits = pair.getValue();
                 fluidBlock.setFaceBits(~neighborBits & 63);

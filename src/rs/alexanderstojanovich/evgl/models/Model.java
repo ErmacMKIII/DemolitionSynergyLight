@@ -63,7 +63,7 @@ public class Model implements Comparable<Model> {
     protected int vbo = 0; // vertex buffer object
     protected int ibo = 0; // index buffer object        
 
-    protected Vector3f pos = new Vector3f();
+    public Vector3f pos = new Vector3f();
     protected float scale = 1.0f; // changing scale also changes width, height and depth
 
     protected float rX = 0.0f;

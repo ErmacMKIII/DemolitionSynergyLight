@@ -24,7 +24,6 @@ import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.MathUtils;
 import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.Vector3fColors;
-import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
  *
@@ -69,8 +68,8 @@ public class RandomLevelGenerator {
     }
 
     private boolean repeatCondition(Vector3f pos) {
-        return LevelContainer.ALL_SOLID_MAP.containsKey(Vector3fUtils.hashCode(pos))
-                || LevelContainer.ALL_FLUID_MAP.containsKey(Vector3fUtils.hashCode(pos))
+        return LevelContainer.ALL_SOLID_MAP.containsKey(pos)
+                || LevelContainer.ALL_FLUID_MAP.containsKey(pos)
                 || levelContainer.getLevelActors().getPlayer().getModel().containsInsideEqually(pos)
                 || levelContainer.getLevelActors().getPlayer().getCamera().getPos().equals(pos)
                 || levelContainer.getMyWindow().shouldClose();
@@ -307,15 +306,14 @@ public class RandomLevelGenerator {
                                 continue;
                             }
 
-                            int hashPos = Vector3fUtils.hashCode(pos);
                             int sbits = 0;
-                            Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(hashPos);
+                            Pair<String, Byte> spair = LevelContainer.ALL_SOLID_MAP.get(pos);
                             if (spair != null) {
                                 sbits = spair.getValue();
                             }
 
                             int fbits = 0;
-                            Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(hashPos);
+                            Pair<String, Byte> fpair = LevelContainer.ALL_FLUID_MAP.get(pos);
                             if (fpair != null) {
                                 fbits = fpair.getValue();
                             }

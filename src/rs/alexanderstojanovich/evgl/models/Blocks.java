@@ -19,7 +19,7 @@ package rs.alexanderstojanovich.evgl.models;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
-import org.magicwerk.brownies.collections.BigList;
+import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
@@ -28,7 +28,7 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
  */
 public class Blocks { // mutual class for both solid blocks and fluid blocks with improved rendering
 
-    protected final List<Block> blockList = new BigList<>(5000);
+    protected final List<Block> blockList = new GapList<>(5000);
     protected boolean verticesReversed = false;
     // array with offsets in the big float buffer
     // this is maximum amount of blocks of the type game can hold

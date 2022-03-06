@@ -36,7 +36,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
 
     private final Configuration cfg = Configuration.getInstance();
 
-    public static final String TITLE = "Demolition Synergy - v23 YEOMEN LIGHT";
+    public static final String TITLE = "Demolition Synergy - v24 YEOMEN LIGHT";
 
     // makes default window -> Renderer sets resolution from config
     public static final Window MY_WINDOW = new Window(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
@@ -98,11 +98,16 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
      * @param deltaTime game object environment update time
      */
     public void update(float deltaTime) {
-        if (!levelContainer.isWorking()) { // working check avoids locking the monitor
-            levelContainer.update(deltaTime);
+        try {
+            lock.writeLock().lock();
+            if (!levelContainer.isWorking()) { // working check avoids locking the monitor
+                levelContainer.update(deltaTime);
+            }
+            intrface.update();
+            intrface.setCollText(assertCollision);
+        } finally {
+            lock.writeLock().unlock();
         }
-        intrface.update();
-        intrface.setCollText(assertCollision);
     }
 
     /**
