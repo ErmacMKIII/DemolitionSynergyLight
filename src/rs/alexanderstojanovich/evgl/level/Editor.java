@@ -25,7 +25,6 @@ import rs.alexanderstojanovich.evgl.models.Chunk;
 import rs.alexanderstojanovich.evgl.models.Model;
 import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.Vector3fColors;
-import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
 /**
  *
@@ -43,7 +42,7 @@ public class Editor {
 
     private static int texValue = 0; // value about which texture to use
     private static final int MIN_VAL = 0;
-    private static final int MAX_VAL = 3;
+    private static final int MAX_VAL = Texture.TEX_WORLD.length - 1;
 
     private static Block selectedNewWireFrame = null;
     private static Block selectedCurrWireFrame = null;

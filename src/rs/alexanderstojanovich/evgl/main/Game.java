@@ -455,8 +455,11 @@ public class Game {
             gameObject.chunkOperations();
             Renderer.alpha = acc * TPS;
         }
+
         // stops the music        
         gameObject.getMusicPlayer().stop();
+
+        DSLogger.reportInfo("Main loop ended.", null);
     }
 
     /**

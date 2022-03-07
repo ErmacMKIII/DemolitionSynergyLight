@@ -30,6 +30,7 @@ import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.Game;
+import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
@@ -112,6 +113,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void updateSolids() {
         for (Block solidBlock : getBlockList()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
+                break;
+            }
+
             int faceBitsBefore = solidBlock.getFaceBits();
             Pair<String, Byte> pair = LevelContainer.ALL_SOLID_MAP.get(solidBlock.pos);
             if (pair != null) {
@@ -127,6 +132,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     public void updateFluids() {
         for (Block fluidBlock : getBlockList()) {
+            if (GameObject.MY_WINDOW.shouldClose()) {
+                break;
+            }
+
             int faceBitsBefore = fluidBlock.getFaceBits();
             Pair<String, Byte> pair = LevelContainer.ALL_FLUID_MAP.get(fluidBlock.pos);
             if (pair != null) {
@@ -209,7 +218,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0) {
             for (Tuple tuple : tupleList) {
                 tuple.render(shaderProgram, lightSrc);
@@ -217,7 +226,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0) {
             for (Tuple tuple : tupleList) {
                 tuple.renderIf(shaderProgram, lightSrc, predicate);

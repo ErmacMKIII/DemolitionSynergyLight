@@ -16,6 +16,7 @@
  */
 package rs.alexanderstojanovich.evgl.critter;
 
+import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.core.Camera;
 import rs.alexanderstojanovich.evgl.models.Model;
@@ -50,7 +51,7 @@ public interface Critter { // interface for Observer, Player and NPC
 
     public void lookAt(float mouseSensitivity, float xoffset, float yoffset);
 
-    public void render();
+    public void render(List<Vector3f> lightSrc);
 
     //--------------------------------------------------------------------------
     public boolean isBuffered();

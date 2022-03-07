@@ -126,7 +126,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram, Vector3f lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
@@ -135,7 +135,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     }
 
     @Override
-    public void renderIf(ShaderProgram shaderProgram, Vector3f lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
