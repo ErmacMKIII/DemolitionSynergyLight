@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evgl.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
@@ -34,8 +35,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     // all blocks in the tuple have the same properties, 
     // like model matrices, color and texture name, and enabled faces in 6-bit represenation
 
-    protected final String texName;
-    protected final int faceEnBits;
+    protected final String name;
 
     protected FloatBuffer fb;
     protected int vbo = 0;
@@ -44,9 +44,15 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     protected int ibo = 0;
     protected final List<Vertex> vertices = new ArrayList<>();
 
-    public Tuple(String texName, int faceEnBits) {
-        this.texName = texName;
-        this.faceEnBits = faceEnBits;
+    public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
+        @Override
+        public int compare(Tuple o1, Tuple o2) {
+            return o2.getName().compareTo(o1.getName());
+        }
+    };
+
+    public Tuple(String texName, int faceEnBits) {        
+        this.name = String.format("%s%02d", texName, faceEnBits);
         Block.deepCopyTo(vertices, texName);
         Block.setFaceBits(vertices, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
@@ -128,7 +134,9 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     @Override
     public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
         // if tuple has any blocks to be rendered and
-        // if face bits are greater than zero, i.e. tuple has something to be rendered
+        // if face bits are greater than zero, i.e. tuple has something to be 
+        String texName = name.substring(0, 5);
+        int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
             Block.render(blockList, texName, vbo, ibo, lightSrc, shaderProgram);
         }
@@ -138,6 +146,8 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
+        String texName = name.substring(0, 5);
+        int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
             Block.renderIf(blockList, texName, vbo, ibo, lightSrc, shaderProgram, predicate);
         }
@@ -177,12 +187,8 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         return ibo;
     }
 
-    public String getTexName() {
-        return texName;
-    }
-
-    public int getFaceEnBits() {
-        return faceEnBits;
+    public String getName() {
+        return name;
     }
 
     public IntBuffer getIntBuff() {

@@ -299,9 +299,8 @@ public class LevelContainer implements GravityEnviroment {
             success = true;
         }
 
-        solidChunks.updateSolids(this);
-        fluidChunks.updateFluids(this);
-
+//        solidChunks.updateSolids(this);
+//        fluidChunks.updateFluids(this);
         progress = 100.0f;
         working = false;
 
@@ -463,8 +462,7 @@ public class LevelContainer implements GravityEnviroment {
                     progress += 50.0f / solidNum;
                 }
 
-                solidChunks.updateSolids();
-
+//                solidChunks.updateSolids();
                 char[] fluid = new char[5];
                 for (int i = 0; i < fluid.length; i++) {
                     fluid[i] = (char) buffer[pos++];
@@ -483,8 +481,7 @@ public class LevelContainer implements GravityEnviroment {
                         progress += 50.0f / fluidNum;
                     }
 
-                    fluidChunks.updateFluids();
-
+//                    fluidChunks.updateFluids();
                     char[] end = new char[3];
                     for (int i = 0; i < end.length; i++) {
                         end[i] = (char) buffer[pos++];
@@ -701,7 +698,7 @@ public class LevelContainer implements GravityEnviroment {
                     solidChunk.setTimeToLive(STD_TTL);
                 } else if (Chunk.isCached(visibleId, true)) {
                     solidChunk = Chunk.loadFromDisk(visibleId, true);
-                    solidChunk.updateSolids();
+//                    solidChunk.updateSolids();
                     solidChunks.getChunkList().add(solidChunk);
                     solidChunks.getChunkList().sort(Chunks.COMPARATOR);
                 }
@@ -711,7 +708,7 @@ public class LevelContainer implements GravityEnviroment {
                     fluidChunk.setTimeToLive(STD_TTL);
                 } else if (Chunk.isCached(visibleId, false)) {
                     fluidChunk = Chunk.loadFromDisk(visibleId, false);
-                    fluidChunk.updateFluids();
+//                    fluidChunk.updateFluids();
                     fluidChunks.getChunkList().add(fluidChunk);
                     fluidChunks.getChunkList().sort(Chunks.COMPARATOR);
                 }
