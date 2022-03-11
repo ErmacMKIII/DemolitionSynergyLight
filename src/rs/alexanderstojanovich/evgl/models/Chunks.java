@@ -21,6 +21,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
+import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.GameObject;
@@ -106,7 +107,14 @@ public class Chunks {
         }
     }
 
-    // for both internal (Init) and external use (Editor)
+    /**
+     * Adds block to the chunks. Block will be added to the corresponding solid
+     * chunk based on Chunk.chunkFunc
+     *
+     * @param block block to add
+     * @param useLevelContainer update level container environment map (for
+     * adjacency)
+     */
     public void addBlock(Block block, boolean useLevelContainer) {
         //----------------------------------------------------------------------
         int chunkId = Chunk.chunkFunc(block.pos);
@@ -121,7 +129,14 @@ public class Chunks {
         chunk.addBlock(block, useLevelContainer);
     }
 
-    // for removing blocks (Editor)
+    /**
+     * Removes block from the chunks. Block will be located based on
+     * Chunk.chunkFunc and then removed if exits.
+     *
+     * @param block block to remove
+     * @param useLevelContainer update level container environment map (for
+     * adjacency)
+     */
     public void removeBlock(Block block, boolean useLevelContainer) {
         int chunkId = Chunk.chunkFunc(block.pos);
         Chunk chunk = getChunk(chunkId);
@@ -255,7 +270,7 @@ public class Chunks {
 
     // all blocks from all the chunks in one big list
     public List<Block> getTotalList() {
-        List<Block> result = new GapList<>();
+        List<Block> result = new BigList<>();
         for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
             Chunk chunk;
             if (Chunk.isCached(id, solid)) {
