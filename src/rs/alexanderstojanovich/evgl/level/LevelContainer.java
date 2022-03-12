@@ -62,9 +62,9 @@ public class LevelContainer implements GravityEnviroment {
     private final Chunks fluidChunks = new Chunks(false);
 
     public static final int MAX_LIGHTS = 256;
-    private final List<Vector3f> lightSrc = new ArrayList<>();
+    public static final List<Vector3f> LIGHT_SRC = new ArrayList<>();
 
-    public static final int VIPAIR_QUEUE_CAPACITY = 5;
+    public static final int VIPAIR_QUEUE_CAPACITY = 8;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
         @Override
         public int compare(Pair<Integer, Float> o1, Pair<Integer, Float> o2) {
@@ -271,6 +271,7 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_SOLID_MAP.clear();
         ALL_FLUID_MAP.clear();
+        LIGHT_SRC.clear();
         Chunk.deleteCache();
 
         for (int i = 0; i <= 2; i++) {
@@ -312,7 +313,7 @@ public class LevelContainer implements GravityEnviroment {
         working = true;
         levelActors.freeze();
 
-        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, Chunk.BOUND >> 6, -4.0f));
+        levelActors.getPlayer().getCamera().setPos(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f));
         levelActors.getPlayer().getCamera().setFront(Camera.Z_AXIS);
         levelActors.getPlayer().getCamera().setUp(Camera.Y_AXIS);
         levelActors.getPlayer().getCamera().setRight(Camera.X_AXIS);
@@ -450,6 +451,7 @@ public class LevelContainer implements GravityEnviroment {
 
             ALL_SOLID_MAP.clear();
             ALL_FLUID_MAP.clear();
+            LIGHT_SRC.clear();
             Chunk.deleteCache();
 
             pos += 2;
@@ -784,17 +786,10 @@ public class LevelContainer implements GravityEnviroment {
             cameraInFluid = isCameraInFluid();
 
             Camera obsCamera = levelActors.getPlayer().getCamera();
-            lightSrc.clear();
-            lightSrc.add(new Vector3f(obsCamera.getPos()));
-
-            int currChunkId = Chunk.chunkFunc(obsCamera.getPos());
-            Chunk currSldChnk = solidChunks.getChunk(currChunkId);
-            if (currSldChnk != null) {
-                for (Block blk : currSldChnk.getBlockList()) {
-                    if (blk.getTexName().equals("reflc")) {
-                        lightSrc.add(new Vector3f(blk.pos));
-                    }
-                }
+            if (LIGHT_SRC.isEmpty()) {
+                LIGHT_SRC.add(obsCamera.getPos());
+            } else {
+                LIGHT_SRC.set(0, obsCamera.getPos());
             }
 
         }
@@ -805,11 +800,10 @@ public class LevelContainer implements GravityEnviroment {
             return;
         }
         Camera obsCamera = levelActors.getPlayer().getCamera();
-        levelActors.render(lightSrc);
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(lightSrc, ShaderProgram.getMainShader());
+        SKYBOX.render(LIGHT_SRC, ShaderProgram.getMainShader());
 
         Predicate<Block> predicate = new Predicate<Block>() {
             @Override
@@ -820,12 +814,12 @@ public class LevelContainer implements GravityEnviroment {
         };
 
         // only visible & uncached are in chunk list      
-        solidChunks.renderIf(ShaderProgram.getMainShader(), lightSrc, predicate);
+        solidChunks.renderIf(ShaderProgram.getMainShader(), LIGHT_SRC, predicate);
 
         // prepare alters tex coords based on whether or not camera is submerged in fluid
         fluidChunks.prepare(cameraInFluid);
         // only visible & uncached are in chunk list 
-        fluidChunks.renderIf(ShaderProgram.getMainShader(), lightSrc, predicate);
+        fluidChunks.renderIf(ShaderProgram.getMainShader(), LIGHT_SRC, predicate);
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
@@ -833,7 +827,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
-            editorNew.render(lightSrc, ShaderProgram.getMainShader());
+            editorNew.render(LIGHT_SRC, ShaderProgram.getMainShader());
         }
 
         Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
@@ -842,7 +836,7 @@ public class LevelContainer implements GravityEnviroment {
             if (!selectedNewWireFrame.isBuffered()) {
                 selectedNewWireFrame.bufferAll();
             }
-            selectedNewWireFrame.render(lightSrc, ShaderProgram.getMainShader());
+            selectedNewWireFrame.render(LIGHT_SRC, ShaderProgram.getMainShader());
         }
 
         Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
@@ -851,8 +845,10 @@ public class LevelContainer implements GravityEnviroment {
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }
-            selectedCurrFrame.render(lightSrc, ShaderProgram.getMainShader());
+            selectedCurrFrame.render(LIGHT_SRC, ShaderProgram.getMainShader());
         }
+
+        levelActors.render(LIGHT_SRC);
     }
 
     // -------------------------------------------------------------------------
@@ -921,6 +917,10 @@ public class LevelContainer implements GravityEnviroment {
 
     public LevelActors getLevelActors() {
         return levelActors;
+    }
+
+    public static List<Vector3f> getLIGHT_SRC() {
+        return LIGHT_SRC;
     }
 
 }

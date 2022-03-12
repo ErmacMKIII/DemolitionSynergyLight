@@ -43,7 +43,6 @@ public class Renderer extends Thread implements Executor {
 
     private int widthGL = Window.MIN_WIDTH;
     private int heightGL = Window.MIN_HEIGHT;
-    protected static double alpha = 0.0;
 
     public static final Queue<FutureTask<Object>> TASK_QUEUE = new ArrayDeque<>();
 
@@ -182,10 +181,6 @@ public class Renderer extends Thread implements Executor {
 
     public GameObject getGameObject() {
         return gameObject;
-    }
-
-    public static double getAlpha() {
-        return alpha;
     }
 
 }
