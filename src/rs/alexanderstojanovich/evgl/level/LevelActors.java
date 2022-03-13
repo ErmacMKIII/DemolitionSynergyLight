@@ -19,9 +19,13 @@ package rs.alexanderstojanovich.evgl.level;
 import java.util.List;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evgl.critter.Critter;
 import rs.alexanderstojanovich.evgl.critter.NPC;
+import rs.alexanderstojanovich.evgl.critter.Observer;
 import rs.alexanderstojanovich.evgl.critter.Player;
-import rs.alexanderstojanovich.evgl.util.Vector3fColors;
+import rs.alexanderstojanovich.evgl.main.Game;
+import rs.alexanderstojanovich.evgl.models.Model;
+import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
  *
@@ -29,30 +33,47 @@ import rs.alexanderstojanovich.evgl.util.Vector3fColors;
  */
 public class LevelActors {
 
-    private final Player player = new Player(null, "icosphere.obj", "marble", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 0.25f);
-    private final List<NPC> npcList = new GapList<>();
-
+    protected final Observer observer = new Observer(new Vector3f());
+    protected final Player player = new Player(observer.getCamera(), null, Model.readFromObjFile(Game.CHARACTER_ENTRY, "Player1_Sheriff.obj", "water"));
+        //(Game.CHARACTER_ENTRY, null, "Player1_Sheriff.obj", "marble", new Vector3f(10.5f, 0.0f, -3.0f), Vector3fColors.WHITE, 1.0f);
+    protected final List<NPC> npcList = new GapList<>();    
+    
     public void freeze() {
-        player.setGivenControl(false);
+        getMainActor().setGivenControl(false);
         for (NPC npc : npcList) {
             npc.setGivenControl(false);
         }
     }
 
     public void unfreeze() {
-        player.setGivenControl(true);
+        getMainActor().setGivenControl(true);
         for (NPC npc : npcList) {
             npc.setGivenControl(true);
         }
     }
 
-    public void render(List<Vector3f> lightSrc) {
-        player.render(lightSrc);
+    public void render(List<Vector3f> lightSrc, ShaderProgram shaderProgram) {        
         for (NPC npc : npcList) {
-            npc.render(lightSrc);
+            npc.render(lightSrc, shaderProgram);
         }
+                
+        getMainActor().render(lightSrc, shaderProgram);
     }
 
+    public Observer getObserver() {
+        return observer;
+    }
+
+    public Critter getMainActor() {
+        if (Game.getCurrentMode() == Game.Mode.SINGLE_PLAYER) {                    
+            return player;
+        } else if (Game.getCurrentMode() == Game.Mode.FREE
+                || Game.getCurrentMode() == Game.Mode.EDITOR) {
+            return observer;
+        }
+        return null;
+    }
+    
     public Player getPlayer() {
         return player;
     }

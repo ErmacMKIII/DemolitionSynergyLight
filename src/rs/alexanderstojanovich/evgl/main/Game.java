@@ -92,6 +92,7 @@ public class Game {
     public static final String WORLD_ENTRY = "world/";
     public static final String EFFECTS_ENTRY = "effects/";
     public static final String SOUND_ENTRY = "sound/";
+    public static final String CHARACTER_ENTRY = "character/";
 
     protected static double upsTicks = 0.0;
 
@@ -116,7 +117,7 @@ public class Game {
      */
     private void observerDo() {
         if (keys[GLFW.GLFW_KEY_W] || keys[GLFW.GLFW_KEY_UP]) {
-            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getObserver();
             obs.movePredictorForward(AMOUNT);
             if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorBackward(AMOUNT);
@@ -127,7 +128,7 @@ public class Game {
             }
         }
         if (keys[GLFW.GLFW_KEY_S] || keys[GLFW.GLFW_KEY_DOWN]) {
-            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getObserver();
             obs.movePredictorBackward(AMOUNT);
             if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorForward(AMOUNT);
@@ -139,7 +140,7 @@ public class Game {
 
         }
         if (keys[GLFW.GLFW_KEY_A]) {
-            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getObserver();
             obs.movePredictorLeft(AMOUNT);
             if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorRight(AMOUNT);
@@ -150,7 +151,7 @@ public class Game {
             }
         }
         if (keys[GLFW.GLFW_KEY_D]) {
-            Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
+            Observer obs = gameObject.getLevelContainer().getLevelActors().getObserver();
             obs.movePredictorRight(AMOUNT);
             if (gameObject.hasCollisionWithCritter(obs)) {
                 obs.movePredictorLeft(AMOUNT);
@@ -161,13 +162,13 @@ public class Game {
             }
         }
         if (keys[GLFW.GLFW_KEY_LEFT]) {
-            gameObject.getLevelContainer().getLevelActors().getPlayer().turnLeft(ANGLE);
+            gameObject.getLevelContainer().getLevelActors().getObserver().turnLeft(ANGLE);
         }
         if (keys[GLFW.GLFW_KEY_RIGHT]) {
-            gameObject.getLevelContainer().getLevelActors().getPlayer().turnRight(ANGLE);
+            gameObject.getLevelContainer().getLevelActors().getObserver().turnRight(ANGLE);
         }
         if (moveMouse) {
-            gameObject.getLevelContainer().getLevelActors().getPlayer().lookAt(mouseSensitivity, xoffset, yoffset);
+            gameObject.getLevelContainer().getLevelActors().getObserver().lookAt(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
     }
@@ -527,6 +528,9 @@ public class Game {
 
     public static void setCurrentMode(Mode currentMode) {
         Game.currentMode = currentMode;
+        GameObject instance = GameObject.getInstance();
+        instance.levelContainer.getLevelActors().freeze();
+        instance.levelContainer.getLevelActors().getMainActor().setGivenControl(true);
     }
 
     public static float getLastX() {

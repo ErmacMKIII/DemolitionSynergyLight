@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evgl.level;
 
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.audio.AudioFile;
+import rs.alexanderstojanovich.evgl.core.Camera;
 import rs.alexanderstojanovich.evgl.critter.Observer;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.models.Block;
@@ -57,9 +58,10 @@ public class Editor {
         selectedNew = loaded;
 
         // fetching..
-        Observer obs = gameObject.getLevelContainer().getLevelActors().getPlayer();
-        Vector3f pos = obs.getCamera().getPos();
-        Vector3f front = obs.getCamera().getFront();
+        Camera camera = gameObject.getLevelContainer().mainCamera();
+        Vector3f pos = camera.getPos();
+        Vector3f front = camera.getFront();
+        
         final float skyboxWidth = LevelContainer.SKYBOX_WIDTH;
         // initial calculation (make it dependant to point player looking at)
         // and make it follows player camera        
@@ -76,8 +78,8 @@ public class Editor {
 
     public static void selectCurrSolid(GameObject gameObject) {
         deselect();
-        Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
-        Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
+        Vector3f cameraPos = gameObject.getLevelContainer().mainCamera().getPos();
+        Vector3f cameraFront = gameObject.getLevelContainer().mainCamera().getFront();
         float minDistanceOfSolid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currSolidChunk = gameObject.getLevelContainer().getSolidChunks().getChunk(currChunkId);
@@ -109,8 +111,8 @@ public class Editor {
 
     public static void selectCurrFluid(GameObject gameObject) {
         deselect();
-        Vector3f cameraPos = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getPos();
-        Vector3f cameraFront = gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().getFront();
+        Vector3f cameraPos = gameObject.getLevelContainer().mainCamera().getPos();
+        Vector3f cameraFront = gameObject.getLevelContainer().mainCamera().getFront();
         float minDistanceOfFluid = Chunk.VISION;
         int currChunkId = Chunk.chunkFunc(cameraPos);
         Chunk currFluidChunk = gameObject.getLevelContainer().getFluidChunks().getChunk(currChunkId);
@@ -276,7 +278,7 @@ public class Editor {
 
     public static void add(GameObject gameObject) {
         if (selectedNew != null) {
-            if (!cannotPlace(gameObject) && !gameObject.getLevelContainer().getLevelActors().getPlayer().getCamera().intersects(selectedNew)) {
+            if (!cannotPlace(gameObject) && gameObject.getLevelContainer().mainCamera().intersects(selectedNew)) {
                 if (selectedNew.isSolid()) { // else if block is solid
                     gameObject.getLevelContainer().getSolidChunks().addBlock(selectedNew, true);
 //                    gameObject.getLevelContainer().getSolidChunks().updateSolids();
