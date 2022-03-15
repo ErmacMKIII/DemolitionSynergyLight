@@ -16,10 +16,13 @@
  */
 package rs.alexanderstojanovich.evgl.core;
 
+import org.joml.Matrix4f;
+import org.joml.Vector3f;
 import org.lwjgl.opengl.GL;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GLCapabilities;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
+import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
  *
@@ -59,6 +62,27 @@ public class MasterRenderer {
         GL11.glCullFace(GL11.GL_BACK);
 
         GL11.glClearColor(LevelContainer.SKYBOX_COLOR.x, LevelContainer.SKYBOX_COLOR.y, LevelContainer.SKYBOX_COLOR.z, 1.0f); // set the background to sky color        
+    }
+
+    public static void updateView(Camera camera) {
+        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
+            camera.calcViewMatrixPub();
+            shaderProgram.bind();
+            shaderProgram.updateUniform(camera.viewMatrix, "viewMatrix");
+            shaderProgram.updateUniform(camera.pos, "cameraPos");
+            shaderProgram.updateUniform(camera.front, "cameraFront");
+            ShaderProgram.unbind();
+        }
+    }
+
+    public static void updateView(Matrix4f viewMatrix, Vector3f cameraPos, Vector3f cameraFront) {
+        for (ShaderProgram shaderProgram : ShaderProgram.SHADER_PROGRAMS) {
+            shaderProgram.bind();
+            shaderProgram.updateUniform(viewMatrix, "viewMatrix");
+            shaderProgram.updateUniform(cameraPos, "cameraPos");
+            shaderProgram.updateUniform(cameraFront, "cameraFront");
+            ShaderProgram.unbind();
+        }
     }
 
     public static void setResolution(int width, int height) {

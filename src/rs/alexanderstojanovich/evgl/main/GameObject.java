@@ -20,6 +20,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import rs.alexanderstojanovich.evgl.audio.AudioPlayer;
 import rs.alexanderstojanovich.evgl.core.MasterRenderer;
+import rs.alexanderstojanovich.evgl.core.PerspectiveRenderer;
 import rs.alexanderstojanovich.evgl.core.Window;
 import rs.alexanderstojanovich.evgl.critter.Critter;
 import rs.alexanderstojanovich.evgl.critter.ModelCritter;
@@ -113,7 +114,9 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public void render() {
         lock.readLock().lock();
         try {
-            MasterRenderer.render(); // it clears color bit and depth bufferAll bit
+            MasterRenderer.render(); // it clears color bit and depth buffer bit
+            PerspectiveRenderer.updatePerspective(MY_WINDOW); // update perspective for all the shaders            
+            MasterRenderer.updateView(levelContainer.getLevelActors().mainCamera()); // update view matrix for all the shaders (alongside with camera vectors)          
             if (levelContainer.isWorking()) { // working check avoids locking the monitor
                 intrface.getProgText().setEnabled(true);
                 intrface.getProgText().setContent("Loading progress: " + Math.round(levelContainer.getProgress()) + "%");
@@ -204,7 +207,7 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     public boolean hasCollisionWithCritter(Critter critter) {
         return levelContainer.hasCollisionWithEnvironment(critter);
     }
-    
+
     // collision detection - critter against solid obstacles
     public boolean hasCollisionWithCritter(ModelCritter livingCritter) {
         return levelContainer.hasCollisionWithEnvironment(livingCritter);
