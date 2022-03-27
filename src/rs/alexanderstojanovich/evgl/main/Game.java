@@ -172,7 +172,7 @@ public class Game {
             gameObject.getLevelContainer().getLevelActors().getObserver().turnRight(ANGLE);
         }
         if (moveMouse) {
-            gameObject.getLevelContainer().getLevelActors().getObserver().lookAt(mouseSensitivity, xoffset, yoffset);
+            gameObject.getLevelContainer().getLevelActors().getObserver().lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
     }
@@ -300,7 +300,7 @@ public class Game {
             gameObject.getLevelContainer().getLevelActors().getPlayer().turnRight(ANGLE);
         }
         if (moveMouse) {
-            gameObject.getLevelContainer().getLevelActors().getPlayer().lookAtOffset(mouseSensitivity * xoffset, mouseSensitivity * yoffset);
+            gameObject.getLevelContainer().getLevelActors().getPlayer().lookAtOffset(mouseSensitivity, xoffset, yoffset);
             moveMouse = false;
         }
 

@@ -136,13 +136,13 @@ public class ModelCritter implements Critter {
     }
 
     @Override
-    public void lookAtOffset(float xoffset, float yoffset) {
+    public void lookAtOffset(float sensitivity, float xoffset, float yoffset) {
         if (givenControl) {
-            yaw += xoffset;
+            yaw += sensitivity * xoffset;
             while (yaw >= 2.0 * Math.PI) {
                 yaw -= 2.0 * Math.PI;
             }
-            pitch += yoffset;
+            pitch += sensitivity * yoffset;
             if (pitch > Math.PI / 2.1) {
                 pitch = (float) (Math.PI / 2.1);
             }
