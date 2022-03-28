@@ -842,17 +842,18 @@ public class LevelContainer implements GravityEnviroment {
         if (working) {
             return;
         }
-        Camera obsCamera = levelActors.getPlayer().getCamera();
+
+        Camera mainCamera = levelActors.mainCamera();
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(LIGHT_SRC, ShaderProgram.getMainShader());
+        SKYBOX.render(LIGHT_SRC, ShaderProgram.getPlayerShader());
 
         Predicate<Block> predicate = new Predicate<Block>() {
             @Override
             public boolean test(Block t) {
-                return (t.canBeSeenBy(obsCamera.getFront(), obsCamera.getPos())
-                        && obsCamera.doesSee(t));
+                return (t.canBeSeenBy(mainCamera.getFront(), mainCamera.getPos())
+                        && mainCamera.doesSee(t));
             }
         };
 
@@ -866,7 +867,7 @@ public class LevelContainer implements GravityEnviroment {
 
         Block editorNew = Editor.getSelectedNew();
         if (editorNew != null) {
-            editorNew.setLight(obsCamera.getPos());
+            editorNew.setLight(mainCamera.getPos());
             if (!editorNew.isBuffered()) {
                 editorNew.bufferAll();
             }
@@ -875,7 +876,7 @@ public class LevelContainer implements GravityEnviroment {
 
         Block selectedNewWireFrame = Editor.getSelectedNewWireFrame();
         if (selectedNewWireFrame != null) {
-            selectedNewWireFrame.setLight(obsCamera.getPos());
+            selectedNewWireFrame.setLight(mainCamera.getPos());
             if (!selectedNewWireFrame.isBuffered()) {
                 selectedNewWireFrame.bufferAll();
             }
@@ -884,7 +885,7 @@ public class LevelContainer implements GravityEnviroment {
 
         Block selectedCurrFrame = Editor.getSelectedCurrWireFrame();
         if (selectedCurrFrame != null) {
-            selectedCurrFrame.setLight(obsCamera.getPos());
+            selectedCurrFrame.setLight(mainCamera.getPos());
             if (!selectedCurrFrame.isBuffered()) {
                 selectedCurrFrame.bufferAll();
             }

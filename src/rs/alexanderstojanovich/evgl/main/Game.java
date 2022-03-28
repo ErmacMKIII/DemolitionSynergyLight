@@ -464,10 +464,7 @@ public class Game {
      * Starts the main (update) loop
      */
     public void go() {
-        // start the music
-        AudioFile audioFile = AudioFile.AMBIENT;
-        gameObject.getMusicPlayer().play(audioFile, true);
-
+        Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
         double lastTime = GLFW.glfwGetTime();
@@ -505,22 +502,15 @@ public class Game {
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
-                        gameObject.levelContainer.levelActors.getObserver().setGivenControl(false);
-                        gameObject.levelContainer.levelActors.getPlayer().setGivenControl(false);
                         break;
                     case EDITOR:
                         // observer has control
-                        gameObject.levelContainer.levelActors.getObserver().setGivenControl(true);
-                        gameObject.levelContainer.levelActors.getPlayer().setGivenControl(false);
-                        gameObject.levelContainer.levelActors.getPlayer().setCurrWeapon(null);
                         observerDo(Math.round(AMOUNT * upsTicks) / (float) TPS);
                         editorDo();
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        gameObject.levelContainer.levelActors.getObserver().setGivenControl(false);
-                        gameObject.levelContainer.levelActors.getPlayer().setGivenControl(true);
                         playerDo(Math.round(AMOUNT * upsTicks) / (float) TPS);
                         break;
                 }
