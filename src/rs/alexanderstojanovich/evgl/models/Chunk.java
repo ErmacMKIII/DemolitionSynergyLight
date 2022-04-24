@@ -49,7 +49,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     public static final int BOUND = 250;
     public static final float VISION = 250.0f; // determines visibility
     private static final int GRID_SIZE = 4;
-    
+
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
     public static final int CHUNK_NUM = GRID_SIZE * GRID_SIZE;
     public static final float LENGTH = BOUND * STEP;
@@ -545,7 +545,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 col++;
             }
         }
-        
+
         // check which rows of the interval
         int row = 0;
         for (float k = 0.0f; k <= 1.0f - STEP; k += STEP) {
@@ -558,14 +558,14 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
         // determining chunk id -> row(z) & col(x)
         int cid = row * GRID_SIZE + col;
-        
+
         return cid;
     }
 
     /**
      * Calculate position centroid based on the chunk Id
      *
-     * @param chunkId chunk number (from 0 to 15)
+     * @param chunkId chunk number
      *
      * @return chunk middle position
      */
@@ -577,15 +577,15 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         // calculating middle normalized
         // col * STEP + STEP / 2.0f;
         // row * STEP + STEP / 2.0f;
-        float nx = STEP * (col + 0.5f);        
-        float nz = row * STEP + STEP / 2.0f;
+        float nx = STEP * (col + 0.5f);
+        float nz = STEP * (row + 0.5f);
 
         float x = nx * (BOUND << 1) - BOUND;
         float z = nz * (BOUND << 1) - BOUND;
 
         return new Vector3f(x, 0.0f, z);
     }
-    
+
     // determine which chunks are visible by this chunk
     public static void determineVisible(Queue<Pair<Integer, Float>> visibleQueue,
             Queue<Pair<Integer, Float>> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
