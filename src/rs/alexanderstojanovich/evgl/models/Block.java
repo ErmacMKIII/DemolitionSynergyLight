@@ -92,11 +92,11 @@ public class Block extends Model {
     };
 
     static {
-        readFromTxtFile("cube.txt");
+        readFromTxtFileMK2("cubex.txt");
     }
 
     public Block(String texName) {
-        super("block.txt", texName);
+        super("cubex.txt", texName);
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices, texName);
         indices.addAll(INDICES);
@@ -104,7 +104,7 @@ public class Block extends Model {
     }
 
     public Block(String texName, Vector3f pos, Vector3f primaryColor, boolean solid) {
-        super("block.txt", texName, pos, primaryColor, solid);
+        super("cubex.txt", texName, pos, primaryColor, solid);
         Arrays.fill(enabledFaces, true);
         deepCopyTo(vertices, texName);
         indices.addAll(INDICES);
@@ -130,6 +130,7 @@ public class Block extends Model {
         }
     }
 
+    @Deprecated
     private static void readFromTxtFile(String fileName) {
         InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
         if (in == null) {
@@ -169,6 +170,78 @@ public class Block extends Model {
         }
     }
 
+    private static void readFromTxtFileMK2(String fileName) {
+        VERTICES.clear();
+        INDICES.clear();
+
+        InputStream in = Block.class.getResourceAsStream(Game.RESOURCES_DIR + fileName);
+        if (in == null) {
+            DSLogger.reportError("Cannot resource dir " + Game.RESOURCES_DIR + "!", null);
+            return;
+        }
+        BufferedReader br = null;
+        try {
+            br = new BufferedReader(new InputStreamReader(in));
+            List<Vector3f> positions = new GapList<>();
+            List<Vector2f> uvs = new ArrayList<>();
+            List<Vector3f> normals = new ArrayList<>();
+            String line;
+            while ((line = br.readLine()) != null) {
+                if (line.startsWith("v:")) {
+                    String[] things = line.split("\\s+");
+                    Vector3f pos = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
+                    positions.add(pos);
+                } else if (line.startsWith("t:")) {
+                    String[] things = line.split("\\s+");
+                    Vector2f uv = new Vector2f(Float.parseFloat(things[1]), Float.parseFloat(things[2]));
+                    uvs.add(uv);
+                } else if (line.startsWith("n:")) {
+                    String[] things = line.split("\\s+");
+                    Vector3f normal = new Vector3f(Float.parseFloat(things[1]), Float.parseFloat(things[2]), Float.parseFloat(things[3]));
+                    normals.add(normal);
+                } else if (line.startsWith("i:")) {
+                    String[] things = line.split("\\s+");
+                    for (String thing : things) {
+                        if (thing.equals("i:")) {
+                            continue;
+                        }
+
+                        String[] subThings = thing.split("/");
+
+                        int indexOfVertex = Integer.parseInt(subThings[0]);
+                        Vector3f pos = new Vector3f(positions.get(indexOfVertex));
+
+                        int indexOfUv = Integer.parseInt(subThings[1]);
+                        Vector2f uv = new Vector2f(uvs.get(indexOfUv));
+
+                        int indexOfNormal = Integer.parseInt(subThings[2]);
+                        Vector3f normal = new Vector3f(normals.get(indexOfNormal));
+
+                        Vertex vertex = new Vertex(pos, normal, uv);
+
+                        if (!VERTICES.contains(vertex)) {
+                            VERTICES.add(vertex);
+                        }
+
+                        INDICES.add(VERTICES.lastIndexOf(vertex));
+                    }
+
+                }
+            }
+        } catch (FileNotFoundException ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        } catch (IOException ex) {
+            DSLogger.reportFatalError(ex.getMessage(), ex);
+        }
+        if (br != null) {
+            try {
+                br.close();
+            } catch (IOException ex) {
+                DSLogger.reportFatalError(ex.getMessage(), ex);
+            }
+        }
+    }
+
     @Override
     public void bufferIndices() {
         // storing indices in the buffer
@@ -187,15 +260,6 @@ public class Block extends Model {
         bufferVertices();
         bufferIndices();
         buffered = true;
-    }
-
-    private void calcDims() {
-        final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
-        final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
-
-        width = Math.abs(maxv.x - minv.x) * scale;
-        height = Math.abs(maxv.y - minv.y) * scale;
-        depth = Math.abs(maxv.z - minv.z) * scale;
     }
 
     /**
@@ -243,6 +307,10 @@ public class Block extends Model {
         }
         ShaderProgram.unbind();
 
+        GL20.glDisableVertexAttribArray(0);
+        GL20.glDisableVertexAttribArray(1);
+        GL20.glDisableVertexAttribArray(2);
+
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, 0);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
@@ -254,7 +322,7 @@ public class Block extends Model {
      * @param texName texture name (uses map to find texture)
      * @param vbo common vbo
      * @param ibo common ibo
-     * @param lightSrc light source(s)
+     * @param lightSrc light source
      * @param shaderProgram shaderProgram for the models
      * @param predicate predicate which tells if block is visible or not
      */
@@ -303,6 +371,15 @@ public class Block extends Model {
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, 0);
     }
 
+    private void calcDims() {
+        final Vector3f minv = new Vector3f(-1.0f, -1.0f, -1.0f);
+        final Vector3f maxv = new Vector3f(1.0f, 1.0f, 1.0f);
+
+        width = Math.abs(maxv.x - minv.x) * scale;
+        height = Math.abs(maxv.y - minv.y) * scale;
+        depth = Math.abs(maxv.z - minv.z) * scale;
+    }
+
     @Override
     public String toString() {
         return "Block{" + "texture=" + texName + ", pos=" + pos + ", scale=" + scale + ", color=" + primaryColor + ", solid=" + solid + '}';
@@ -338,8 +415,8 @@ public class Block extends Model {
         return faceNum;
     }
 
-    public static Pair<Integer, Integer> getFaceVertices(int faceNum) {
-        return new Pair<>(4 * faceNum, 4 * (faceNum + 1));
+    public static List<Vertex> getFaceVertices(List<Vertex> vertices, int faceNum) {
+        return vertices.subList(4 * faceNum, 4 * (faceNum + 1));
     }
 
     public boolean canBeSeenBy(Vector3f front, Vector3f pos) {
@@ -384,9 +461,12 @@ public class Block extends Model {
      */
     public static int getVisibleFaceBits(Vector3f camFront) {
         int result = 0;
+        Vector3f temp = new Vector3f();
         for (int j = Block.LEFT; j <= Block.FRONT; j++) {
             Vector3f normal = FACE_NORMALS[j];
-            if (normal.dot(camFront) >= -0.75f) {
+            float dotProduct = normal.dot(camFront.mul(-1.0f, temp));
+            float angle = (float) Math.toDegrees(Math.acos(dotProduct));
+            if (angle < 180.0f) {
                 int mask = 1 << j;
                 result |= mask;
             }
@@ -396,17 +476,15 @@ public class Block extends Model {
     }
 
     public void disableFace(int faceNum) {
-        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
-        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
-            vertices.get(i).setEnabled(false);
+        for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
+            subVertex.setEnabled(false);
         }
         this.enabledFaces[faceNum] = false;
     }
 
     public void enableFace(int faceNum) {
-        Pair<Integer, Integer> faceVertices = getFaceVertices(faceNum);
-        for (int i = faceVertices.getKey(); i < faceVertices.getValue(); i++) {
-            vertices.get(i).setEnabled(true);
+        for (Vertex subVertex : getFaceVertices(vertices, faceNum)) {
+            subVertex.setEnabled(true);
         }
         this.enabledFaces[faceNum] = true;
     }
@@ -426,17 +504,15 @@ public class Block extends Model {
     }
 
     public void reverseFaceVertexOrder() {
-        for (int j = 0; j <= 5; j++) {
-            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
-            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
+        for (int faceNum = 0; faceNum <= 5; faceNum++) {
+            Collections.reverse(getFaceVertices(vertices, faceNum));
         }
         verticesReversed = !verticesReversed;
     }
 
     public static void reverseFaceVertexOrder(List<Vertex> vertices) {
-        for (int j = 0; j <= 5; j++) {
-            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
-            Collections.reverse(vertices.subList(faceVertices.getKey(), faceVertices.getValue()));
+        for (int faceNum = 0; faceNum <= 5; faceNum++) {
+            Collections.reverse(getFaceVertices(vertices, faceNum));
         }
     }
 
@@ -548,6 +624,7 @@ public class Block extends Model {
     }
 
     // used in static Level container to get compressed positioned sets
+    @Deprecated
     public static int getNeighborBits(Vector3f pos, Set<Vector3f> vectorSet) {
         int bits = 0;
         for (int j = 0; j <= 5; j++) { // j - face number
@@ -577,8 +654,7 @@ public class Block extends Model {
         for (int j = 0; j <= 5; j++) {
             int mask = 1 << j;
             int bit = (faceBits & mask) >> j;
-            Pair<Integer, Integer> faceVertices = getFaceVertices(j);
-            List<Vertex> subList = vertices.subList(faceVertices.getKey(), faceVertices.getValue());
+            List<Vertex> subList = getFaceVertices(vertices, j);
             boolean en = (bit == 1);
             for (Vertex v : subList) {
                 v.setEnabled(en);
