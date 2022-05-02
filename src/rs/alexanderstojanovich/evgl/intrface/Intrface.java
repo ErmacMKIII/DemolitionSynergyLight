@@ -44,7 +44,8 @@ public class Intrface {
     private Quad crosshair;
     private Text updText; // displays updates
     private Text fpsText; // displays framerates
-    private Text alphaText; // display alpha ratio
+    private Text posText; // display position
+    private Text chunkText; // display current chunk (player)
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
     private Text progText; // progress text;
@@ -82,8 +83,14 @@ public class Intrface {
         updText.alignToNextChar();
         fpsText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.85f));
         fpsText.alignToNextChar();
-        alphaText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(-1.0f, 0.7f));
-        alphaText.alignToNextChar();
+
+        posText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(1.0f, -1.0f));
+        posText.setAlignment(Text.ALIGNMENT_RIGHT);
+        posText.alignToNextChar();
+
+        chunkText = new Text(Texture.FONT, "", Vector3fColors.GREEN, new Vector2f(1.0f, -0.85f));
+        chunkText.setAlignment(Text.ALIGNMENT_RIGHT);
+        chunkText.alignToNextChar();
 
         collText = new Text(Texture.FONT, "No Collision", Vector3fColors.GREEN, new Vector2f(-1.0f, -1.0f));
         collText.alignToNextChar();
@@ -461,10 +468,16 @@ public class Intrface {
             fpsText.bufferAll();
         }
         fpsText.render(ifcShaderProgram);
-        if (!alphaText.isBuffered()) {
-            alphaText.bufferAll();
+
+        if (!posText.isBuffered()) {
+            posText.bufferAll();
         }
-        alphaText.render(ifcShaderProgram);
+        posText.render(ifcShaderProgram);
+        if (!chunkText.isBuffered()) {
+            chunkText.bufferAll();
+        }
+        chunkText.render(ifcShaderProgram);
+
         if (!collText.isBuffered()) {
             collText.bufferAll();
         }
@@ -524,8 +537,24 @@ public class Intrface {
         return fpsText;
     }
 
-    public Text getAlphaText() {
-        return alphaText;
+    public Text getPosText() {
+        return posText;
+    }
+
+    public Text getChunkText() {
+        return chunkText;
+    }
+
+    public Menu getCreditsMenu() {
+        return creditsMenu;
+    }
+
+    public Menu getRandLvlMenu() {
+        return randLvlMenu;
+    }
+
+    public int getNumBlocks() {
+        return numBlocks;
     }
 
     public Text getCollText() {
