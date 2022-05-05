@@ -67,9 +67,7 @@ public abstract class Menu {
         Texture mngTexture = Texture.MINIGUN;
         makeItems();
         iterator = new Quad(24, 24, mngTexture);
-        iterator.getPos().x = -items.get(selected).getPos().x;
-        iterator.getPos().y = items.get(selected).getPos().y;
-        iterator.setColor(items.get(selected).getColor());
+        updateIterator();
     }
 
     public Menu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
@@ -86,7 +84,7 @@ public abstract class Menu {
         iterator.getPos().x = -items.get(selected).getPos().x;
         iterator.getPos().y = items.get(selected).getPos().y;
         iterator.setColor(items.get(selected).getColor());
-        iterator.setScale(scale);
+        updateIterator();
     }
 
     private void makeItems() {
@@ -102,6 +100,15 @@ public abstract class Menu {
             item.setScale(itemScale);
             item.setAlignment(alignmentAmount);
             items.add(item);
+        }
+
+        int index = 0;
+        int longestWord = longestWord();
+        for (Text item : items) {
+            item.setAlignment(alignmentAmount);
+            item.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.getRelativeCharWidth()) + pos.x;
+            item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
+            index++;
         }
     }
 
@@ -237,13 +244,23 @@ public abstract class Menu {
         }
     }
 
+    private void updateIterator() {
+        if (selected >= 0 && selected < items.size()) {
+            iterator.getPos().x = items.get(selected).getPos().x;
+            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
+            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
+            iterator.getPos().y = items.get(selected).getPos().y;
+            iterator.setColor(items.get(selected).getColor());
+        }
+    }
+
     public void selectPrev() {
         useMouse = false;
         selected--;
         if (selected < 0) {
             selected = items.size() - 1;
         }
-        iterator.setColor(items.get(selected).getColor());
+        updateIterator();
     }
 
     public void selectNext() {
@@ -252,7 +269,7 @@ public abstract class Menu {
         if (selected > items.size() - 1) {
             selected = 0;
         }
-        iterator.setColor(items.get(selected).getColor());
+        updateIterator();
     }
 
     // if menu is enabled; it's gonna track mouse cursor position 
