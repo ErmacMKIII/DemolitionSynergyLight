@@ -32,7 +32,6 @@ import rs.alexanderstojanovich.evgl.level.Editor;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.models.Block;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
-import rs.alexanderstojanovich.evgl.util.MathUtils;
 import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
@@ -44,6 +43,7 @@ public class Game {
     private static final Configuration cfg = Configuration.getInstance();
 
     public static final int TPS = 80; // TICKS PER SECOND GENERATED
+    public static final double TICK_TIME = 1.0 / (double) TPS;
 
     public static final float AMOUNT = 4.0f;
     public static final float ANGLE = (float) (Math.PI / 180);
@@ -97,6 +97,7 @@ public class Game {
     public static final String CHARACTER_ENTRY = "character/";
 
     protected static double upsTicks = 0.0;
+    protected static double accumulator = 0.0;
 
     public static enum Mode {
         FREE, SINGLE_PLAYER, MULTIPLAYER, EDITOR
@@ -467,18 +468,20 @@ public class Game {
         Game.setCurrentMode(Mode.FREE);
         ups = 0;
 
+        accumulator = 0.0;
         double lastTime = GLFW.glfwGetTime();
         double currTime;
         double deltaTime;
 
         int index = 0; // track index
 
-        double timerc = GLFW.glfwGetTime();
+        double timerc = 0.0;
 
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
             // hunger time
+            accumulator += deltaTime * Game.TPS;
             upsTicks += deltaTime * Game.TPS;
             lastTime = currTime;
 
@@ -499,32 +502,34 @@ public class Game {
                     }
                 }
                 gameObject.determineVisibleChunks();
-                gameObject.update((float) upsTicks / (float) Game.TPS);
+                gameObject.update((float) TICK_TIME);
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
                         break;
                     case EDITOR:
                         // observer has control
-                        observerDo((AMOUNT * (float) upsTicks) / (float) TPS);
+                        observerDo(AMOUNT * (float) TICK_TIME);
                         editorDo();
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        playerDo((AMOUNT * (float) upsTicks) / (float) TPS);
+                        playerDo(AMOUNT * (float) TICK_TIME);
                         break;
                 }
+
+                // update chunks every 10 ticks
+                if (accumulator > timerc + 10.0) {
+                    gameObject.chunkOperations((float) TICK_TIME);
+                    timerc += 10.0;
+                }
+
                 ups++;
                 upsTicks--;
             }
 
-            if (GLFW.glfwGetTime() > timerc + 0.03125) {
-                gameObject.chunkOperations();
-                timerc += 0.03125;
-            }
         }
-
         // stops the music        
         gameObject.getMusicPlayer().stop();
 
@@ -611,6 +616,10 @@ public class Game {
 
     public static float getYoffset() {
         return yoffset;
+    }
+
+    public static double getAccumulator() {
+        return accumulator;
     }
 
 }
