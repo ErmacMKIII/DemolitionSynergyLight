@@ -478,6 +478,7 @@ public class Game {
         while (!GameObject.MY_WINDOW.shouldClose()) {
             currTime = GLFW.glfwGetTime();
             deltaTime = currTime - lastTime;
+            // hunger time
             upsTicks += deltaTime * Game.TPS;
             lastTime = currTime;
 
@@ -498,28 +499,24 @@ public class Game {
                     }
                 }
                 gameObject.determineVisibleChunks();
-                gameObject.update((float) (Math.floorMod(Math.round(upsTicks), TPS)));
+                gameObject.update((float) upsTicks / (float) Game.TPS);
                 switch (currentMode) {
                     case FREE:
                         // nobody has control
                         break;
                     case EDITOR:
                         // observer has control
-                        observerDo(Math.round(AMOUNT * upsTicks) / (float) TPS);
+                        observerDo((AMOUNT * (float) upsTicks) / (float) TPS);
                         editorDo();
                         break;
                     case SINGLE_PLAYER:
                     case MULTIPLAYER:
                         // player has control
-                        playerDo(Math.round(AMOUNT * upsTicks) / (float) TPS);
+                        playerDo((AMOUNT * (float) upsTicks) / (float) TPS);
                         break;
                 }
                 ups++;
                 upsTicks--;
-            }
-
-            synchronized (GameObject.MY_WINDOW) {
-                GameObject.MY_WINDOW.notify();
             }
 
             if (GLFW.glfwGetTime() > timerc + 0.03125) {

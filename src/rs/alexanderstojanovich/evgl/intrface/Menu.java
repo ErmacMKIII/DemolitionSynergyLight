@@ -65,8 +65,9 @@ public abstract class Menu {
         this.title.setColor(Vector3fColors.YELLOW);
         this.itemPairs = itemPairs;
         Texture mngTexture = Texture.MINIGUN;
-        makeItems();
         iterator = new Quad(24, 24, mngTexture);
+        iterator.scale = itemScale;
+        makeItems();
         updateIterator();
     }
 
@@ -80,10 +81,8 @@ public abstract class Menu {
         this.itemScale = scale;
         Texture mngTexture = Texture.MINIGUN;
         iterator = new Quad(24, 24, mngTexture);
+        iterator.scale = scale;
         makeItems();
-        iterator.getPos().x = -items.get(selected).getPos().x;
-        iterator.getPos().y = items.get(selected).getPos().y;
-        iterator.setColor(items.get(selected).getColor());
         updateIterator();
     }
 
