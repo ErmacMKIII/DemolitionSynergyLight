@@ -55,8 +55,6 @@ public class Vector3fUtils {
             buffer[8], buffer[11], buffer[9], buffer[10], s3
         }, StandardCharsets.UTF_16LE);
 
-        System.out.println(str);
-
         return str;
     }
 
