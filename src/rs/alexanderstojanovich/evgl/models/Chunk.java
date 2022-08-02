@@ -16,11 +16,6 @@
  */
 package rs.alexanderstojanovich.evgl.models;
 
-import java.io.BufferedOutputStream;
-import java.io.File;
-import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
-import java.io.IOException;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.Predicate;
@@ -31,7 +26,6 @@ import rs.alexanderstojanovich.evgl.level.CacheModule;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
-import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.Vector3fUtils;
 
@@ -43,7 +37,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     // MODULATOR, DIVIDER, VISION are used in chunkCheck and for determining visible chunks
     public static final int BOUND = 512;
-    public static final float VISION = 250.0f; // determines visibility
+    public static final float VISION = 256.0f; // determines visibility
     private static final int GRID_SIZE = 4;
 
     public static final float STEP = 1.0f / (float) (GRID_SIZE);
@@ -62,7 +56,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
 
     private boolean buffered = false;
 
-    private float timeToLive = 0.0f;
+    private float timeToLive = LevelContainer.STD_TTL;
 
     public Chunk(int id, boolean solid) {
         this.id = id;
@@ -82,7 +76,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
      * @param keyFaceBits face bits part
      * @return Tuple if found (null if not found)
      */
-    protected Tuple getTuple(String keyTexture, Integer keyFaceBits) {
+    public Tuple getTuple(String keyTexture, Integer keyFaceBits) {
         String keyName = String.format("%s%02d", keyTexture, keyFaceBits);
         int left = 0;
         int right = tupleList.size() - 1;
@@ -566,19 +560,25 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // determine which chunks are visible by this chunk
-    public static void determineVisible(Queue<Pair<Integer, Float>> visibleQueue,
-            Queue<Pair<Integer, Float>> invisibleQueue, Vector3f actorPos, Vector3f actorFront) {
-        // current chunk where player is
+    public static void determineVisible(Queue<Integer> vChnkIdQueue, Queue<Integer> iChnkIdQueue, Vector3f actorPos) {
+        vChnkIdQueue.clear();
+        iChnkIdQueue.clear();
+        // current chunk where player is        
         int currChunkId = chunkFunc(actorPos);
-        visibleQueue.offer(new Pair<>(currChunkId, 0.0f));
-        for (int id = 0; id < Chunk.CHUNK_NUM; id++) {
-            if (id != currChunkId) {
-                Vector3f chunkPos = invChunkFunc(id);
-                float distance1 = chunkPos.distance(actorPos);
-                if (distance1 <= VISION) {
-                    visibleQueue.offer(new Pair<>(id, distance1));
-                } else {
-                    invisibleQueue.offer(new Pair<>(id, distance1));
+        Vector3f currChunkPos = invChunkFunc(currChunkId);
+        float distance0 = actorPos.distance(currChunkPos);
+        if (!vChnkIdQueue.contains(currChunkId)) {
+            vChnkIdQueue.offer(currChunkId);
+        }
+        // rest of the chunks
+        for (int chunkId = 0; chunkId < Chunk.CHUNK_NUM; chunkId++) {
+            if (chunkId != currChunkId) {
+                Vector3f chunkPos = invChunkFunc(chunkId);
+                float distance1 = actorPos.distance(chunkPos);
+                if (distance1 - distance0 <= LENGTH) {
+                    vChnkIdQueue.offer(chunkId);
+                } else if (!iChnkIdQueue.contains(chunkId)) {
+                    iChnkIdQueue.offer(chunkId);
                 }
             }
         }

@@ -171,6 +171,14 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         }
     }
 
+    public String texName() {
+        return name.substring(0, 5);
+    }
+
+    public int faceBits() {
+        return Integer.parseInt(name.substring(5));
+    }
+
     public List<Vertex> getVertices() {
         return vertices;
     }

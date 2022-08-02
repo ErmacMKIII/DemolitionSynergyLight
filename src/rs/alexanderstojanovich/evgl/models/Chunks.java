@@ -18,6 +18,7 @@ package rs.alexanderstojanovich.evgl.models;
 
 import java.util.Comparator;
 import java.util.List;
+import java.util.Queue;
 import java.util.function.Predicate;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
@@ -427,6 +428,30 @@ public class Chunks {
                 chunk.bufferAll();
             }
             chunk.renderIf(shaderProgram, lightSrc, predicate);
+        }
+    }
+
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+        for (int chunkId : queue) {
+            Chunk chunk = getChunk(chunkId);
+            if (chunk != null) {
+                if (!chunk.isBuffered()) {
+                    chunk.bufferAll();
+                }
+                chunk.render(shaderProgram, lightSrc);
+            }
+        }
+    }
+
+    public void renderIf(Queue<Integer> queue, ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
+        for (int chunkId : queue) {
+            Chunk chunk = getChunk(chunkId);
+            if (chunk != null) {
+                if (!chunk.isBuffered()) {
+                    chunk.bufferAll();
+                }
+                chunk.renderIf(shaderProgram, lightSrc, predicate);
+            }
         }
     }
 
