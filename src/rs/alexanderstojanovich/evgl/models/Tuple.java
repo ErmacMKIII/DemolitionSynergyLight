@@ -43,6 +43,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     protected final IntBuffer intBuff;
     protected int ibo = 0;
     protected final List<Vertex> vertices = new ArrayList<>();
+    protected final int indicesNum;
 
     public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
         @Override
@@ -56,6 +57,14 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         Block.deepCopyTo(vertices, texName);
         Block.setFaceBits(vertices, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
+        int numberOfOnes = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            int mask = 1 << j;
+            if ((faceEnBits & mask) != 0) {
+                numberOfOnes++;
+            }
+        }
+        this.indicesNum = 6 * numberOfOnes;
     }
 
     // renderer does this stuff prior to any rendering
@@ -138,7 +147,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         String texName = name.substring(0, 5);
         int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
-            Block.render(blockList, texName, vbo, ibo, lightSrc, shaderProgram);
+            Block.render(blockList, texName, vbo, ibo, indicesNum, lightSrc, shaderProgram);
         }
     }
 
@@ -149,7 +158,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         String texName = name.substring(0, 5);
         int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
-            Block.renderIf(blockList, texName, vbo, ibo, lightSrc, shaderProgram, predicate);
+            Block.renderIf(blockList, texName, vbo, ibo, indicesNum, lightSrc, shaderProgram, predicate);
         }
     }
 
