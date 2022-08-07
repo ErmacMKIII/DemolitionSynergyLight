@@ -36,12 +36,12 @@ import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 public final class GameObject { // is mutual object for {Main, Renderer, Random Level Generator}
     // this class protects levelContainer, waterRenderer & Random Level Generator between the threads
 
-    private final Configuration cfg = Configuration.getInstance();
+    private static final Configuration cfg = Configuration.getInstance();
 
     public static final String TITLE = "Demolition Synergy - v25 ZENITH LIGHT";
 
     // makes default window -> Renderer sets resolution from config
-    public static final Window MY_WINDOW = Window.getInstance(Window.MIN_WIDTH, Window.MIN_HEIGHT, TITLE); // creating the window
+    public static final Window MY_WINDOW = Window.getInstance(cfg.getWidth(), cfg.getHeight(), TITLE); // creating the window
 
     protected final LevelContainer levelContainer;
     protected final RandomLevelGenerator randomLevelGenerator;
@@ -59,10 +59,10 @@ public final class GameObject { // is mutual object for {Main, Renderer, Random 
     protected final ReadWriteLock lock = new ReentrantReadWriteLock();
 
     private GameObject() {
+        this.init();
         this.levelContainer = new LevelContainer(this);
         this.randomLevelGenerator = new RandomLevelGenerator(levelContainer);
         this.intrface = new Intrface(this);
-        this.init();
     }
 
     private void init() {

@@ -16,7 +16,6 @@
  */
 package rs.alexanderstojanovich.evgl.intrface;
 
-import java.util.ArrayList;
 import java.util.List;
 import org.joml.Vector2f;
 import org.lwjgl.glfw.GLFW;
@@ -28,7 +27,6 @@ import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
-import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
 /**
@@ -37,15 +35,17 @@ import rs.alexanderstojanovich.evgl.util.Vector3fColors;
  */
 public abstract class Menu {
 
+    protected static enum EditType {
+        EditNoValue, EditSingleValue, EditMultiValue
+    };
+
     private Quad logo; // only basic menus have logo
     protected Text title;
 
-    protected List<Pair<String, Boolean>> itemPairs;
+    protected final List<MenuItem> items;
     protected boolean enabled = false;
 
     protected Vector2f pos = new Vector2f();
-    protected List<Text> items = new ArrayList<>();
-
     protected float itemScale = 1.0f;
 
     protected int selected = 0;
@@ -60,10 +60,10 @@ public abstract class Menu {
 
     protected boolean useMouse = false;
 
-    public Menu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName) {
+    public Menu(String title, List<MenuItem> items, String textureFileName) {
         this.title = new Text(Texture.FONT, title);
         this.title.setColor(Vector3fColors.YELLOW);
-        this.itemPairs = itemPairs;
+        this.items = items;
         Texture mngTexture = Texture.MINIGUN;
         iterator = new Quad(24, 24, mngTexture);
         iterator.scale = itemScale;
@@ -71,11 +71,11 @@ public abstract class Menu {
         updateIterator();
     }
 
-    public Menu(String title, List<Pair<String, Boolean>> itemPairs, String textureFileName, Vector2f pos, float scale) {
+    public Menu(String title, List<MenuItem> items, String textureFileName, Vector2f pos, float scale) {
         this.title = new Text(Texture.FONT, title);
         this.title.setScale(scale);
         this.title.setColor(Vector3fColors.YELLOW);
-        this.itemPairs = itemPairs;
+        this.items = items;
         this.enabled = false;
         this.pos = pos;
         this.itemScale = scale;
@@ -87,26 +87,14 @@ public abstract class Menu {
     }
 
     private void makeItems() {
-        for (Pair<String, Boolean> pair : itemPairs) {
-            Text item = new Text(Texture.FONT, pair.getKey());
-            if (pair.getValue()) {
-                item.color = Vector3fColors.GREEN;
-            } else {
-                item.color = Vector3fColors.RED;
-            }
-            item.getPos().x = pos.x;
-            item.getPos().y = -Text.LINE_SPACING * items.size() * item.getRelativeCharHeight() + pos.y;
-            item.setScale(itemScale);
-            item.setAlignment(alignmentAmount);
-            items.add(item);
-        }
-
         int index = 0;
         int longestWord = longestWord();
-        for (Text item : items) {
-            item.setAlignment(alignmentAmount);
-            item.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.getRelativeCharWidth()) + pos.x;
-            item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
+        for (MenuItem item : items) {
+            item.keyText.color = Vector3fColors.GREEN;
+            item.keyText.setScale(itemScale);
+            item.keyText.setAlignment(alignmentAmount);
+            item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longestWord * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
+            item.keyText.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
             index++;
         }
     }
@@ -191,9 +179,9 @@ public abstract class Menu {
 
     protected int longestWord() {
         int longest = 0;
-        for (Text item : items) {
-            if (item.getContent().length() > longest) {
-                longest = item.getContent().length();
+        for (MenuItem item : items) {
+            if (item.keyText.getContent().length() > longest) {
+                longest = item.keyText.content.length();
             }
         }
         return longest;
@@ -218,24 +206,15 @@ public abstract class Menu {
                 logo.render(shaderProgram);
             }
             int index = 0;
-            for (Text item : items) {
-                item.setAlignment(alignmentAmount);
-                item.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.getRelativeCharWidth()) + pos.x;
-                item.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.getRelativeCharHeight() + pos.y;
-
-                if (!item.isBuffered()) {
-                    item.bufferAll();
-                }
+            for (MenuItem item : items) {
+                item.keyText.setAlignment(alignmentAmount);
+                item.keyText.getPos().x = (alignmentAmount - 0.5f) * (longest * itemScale * item.keyText.getRelativeCharWidth()) + pos.x;
+                item.keyText.getPos().y = -Text.LINE_SPACING * itemScale * (index + 1) * item.keyText.getRelativeCharHeight() + pos.y;
 
                 item.render(shaderProgram);
                 index++;
             }
 
-            iterator.getPos().x = items.get(selected).getPos().x;
-            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
-            iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
-            iterator.getPos().y = items.get(selected).getPos().y;
-            iterator.setColor(items.get(selected).getColor());
             if (!iterator.isBuffered()) {
                 iterator.bufferAll();
             }
@@ -245,11 +224,11 @@ public abstract class Menu {
 
     private void updateIterator() {
         if (selected >= 0 && selected < items.size()) {
-            iterator.getPos().x = items.get(selected).getPos().x;
-            iterator.getPos().x -= items.get(selected).getRelativeWidth() * alignmentAmount * itemScale;
+            iterator.getPos().x = items.get(selected).keyText.getPos().x;
+            iterator.getPos().x -= items.get(selected).keyText.getRelativeWidth() * alignmentAmount * itemScale;
             iterator.getPos().x -= 1.5f * iterator.giveRelativeWidth() * iterator.getScale();
-            iterator.getPos().y = items.get(selected).getPos().y;
-            iterator.setColor(items.get(selected).getColor());
+            iterator.getPos().y = items.get(selected).keyText.getPos().y;
+            iterator.setColor(items.get(selected).keyText.color);
         }
     }
 
@@ -276,12 +255,12 @@ public abstract class Menu {
     public void update() {
         if (enabled && useMouse) {
             int index = 0;
-            for (Text item : items) {
-                float xMin = item.pos.x; // it already contains pos.x
-                float xMax = xMin + itemScale * item.getRelativeWidth();
+            for (MenuItem item : items) {
+                float xMin = item.keyText.pos.x; // it already contains pos.x
+                float xMax = xMin + itemScale * item.keyText.getRelativeWidth();
 
-                float yMin = item.pos.y; // it already contains pos.y
-                float yMax = yMin + itemScale * item.getRelativeCharHeight();
+                float yMin = item.keyText.pos.y; // it already contains pos.y
+                float yMax = yMin + itemScale * item.keyText.getRelativeCharHeight();
 
                 if (xposGL >= xMin
                         && xposGL <= xMax
@@ -294,6 +273,7 @@ public abstract class Menu {
             }
             useMouse = false;
         }
+        updateIterator();
     }
 
     public Window getMyWindow() {
@@ -308,20 +288,12 @@ public abstract class Menu {
         this.logo = logo;
     }
 
-    public List<Pair<String, Boolean>> getItemPairs() {
-        return itemPairs;
-    }
-
     public boolean isEnabled() {
         return enabled;
     }
 
     public Vector2f getPos() {
         return pos;
-    }
-
-    public List<Text> getItems() {
-        return items;
     }
 
     public float getXposGL() {
@@ -342,10 +314,6 @@ public abstract class Menu {
 
     public void setEnabled(boolean enabled) {
         this.enabled = enabled;
-    }
-
-    public void setItems(List<Text> items) {
-        this.items = items;
     }
 
     public void setSelected(int selected) {
@@ -378,6 +346,10 @@ public abstract class Menu {
 
     public float getItemScale() {
         return itemScale;
+    }
+
+    public List<MenuItem> getItems() {
+        return items;
     }
 
 }

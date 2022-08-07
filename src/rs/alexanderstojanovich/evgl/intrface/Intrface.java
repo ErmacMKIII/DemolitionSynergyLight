@@ -31,7 +31,6 @@ import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.main.Renderer;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
-import rs.alexanderstojanovich.evgl.util.Pair;
 import rs.alexanderstojanovich.evgl.util.PlainTextReader;
 import rs.alexanderstojanovich.evgl.util.Vector3fColors;
 
@@ -48,6 +47,7 @@ public class Intrface {
     private Text fpsText; // displays framerates
     private Text posText; // display position
     private Text chunkText; // display current chunk (player)
+
     private Text collText; // collision info
     private Text helpText; // displays the help (toggle)
     private Text progText; // progress text;
@@ -61,10 +61,12 @@ public class Intrface {
     private ConcurrentDialog singlePlayerDialog;
 
     private Menu mainMenu;
+
     private OptionsMenu optionsMenu;
+
     private Menu editorMenu;
     private Menu creditsMenu;
-    private Menu randLvlMenu;
+    private OptionsMenu randLvlMenu;
     private Menu loadLvlMenu;
 
     private int numBlocks = 0;
@@ -112,14 +114,14 @@ public class Intrface {
 
         crosshair = new Quad(27, 27, Texture.CROSSHAIR, true); // it ignores resolution changes and doesn't scale
         crosshair.setColor(Vector3fColors.WHITE);
-        List<Pair<String, Boolean>> mainMenuPairs = new ArrayList<>();
-        mainMenuPairs.add(new Pair<>("SINGLE PLAYER", true));
-        mainMenuPairs.add(new Pair<>("MULTIPLAYER", false));
-        mainMenuPairs.add(new Pair<>("EDITOR", true));
-        mainMenuPairs.add(new Pair<>("OPTIONS", true));
-        mainMenuPairs.add(new Pair<>("CREDITS", true));
-        mainMenuPairs.add(new Pair<>("EXIT", true));
-        mainMenu = new Menu("", mainMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        List<MenuItem> mainMenuItems = new ArrayList<>();
+        mainMenuItems.add(new MenuItem("SINGLE PLAYER", Menu.EditType.EditNoValue, null));
+        mainMenuItems.add(new MenuItem("MULTIPLAYER", Menu.EditType.EditNoValue, null));
+        mainMenuItems.add(new MenuItem("EDITOR", Menu.EditType.EditNoValue, null));
+        mainMenuItems.add(new MenuItem("OPTIONS", Menu.EditType.EditNoValue, null));
+        mainMenuItems.add(new MenuItem("CREDITS", Menu.EditType.EditNoValue, null));
+        mainMenuItems.add(new MenuItem("EXIT", Menu.EditType.EditNoValue, null));
+        mainMenu = new Menu("", mainMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
 
@@ -127,7 +129,7 @@ public class Intrface {
 
             @Override
             protected void execute() {
-                String s = mainMenu.getItems().get(mainMenu.getSelected()).getContent();
+                String s = mainMenu.items.get(mainMenu.getSelected()).keyText.content;
                 switch (s) {
                     case "SINGLE PLAYER":
                         singlePlayerDialog.open();
@@ -189,9 +191,9 @@ public class Intrface {
             }
         });
 
-        List<Pair<String, Boolean>> loadLvlMenuPairs = new ArrayList<>();
+        List<MenuItem> loadLvlMenuPairs = new ArrayList<>();
         for (String datFile : datFileList) {
-            loadLvlMenuPairs.add(new Pair<>(datFile, true));
+            loadLvlMenuPairs.add(new MenuItem(datFile, Menu.EditType.EditNoValue, null));
         }
 
         loadLvlMenu = new Menu("LOAD LEVEL", loadLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
@@ -202,7 +204,7 @@ public class Intrface {
 
             @Override
             protected void execute() {
-                String chosen = loadLvlMenu.getItems().get(loadLvlMenu.getSelected()).getContent();
+                String chosen = loadLvlMenu.items.get(loadLvlMenu.getSelected()).keyText.getContent();
                 gameObject.loadLevelFromFile(chosen);
             }
         };
@@ -223,13 +225,16 @@ public class Intrface {
                 return ok;
             }
         };
+        randLvlDialog.dialog.alignToNextChar();
 
-        List<Pair<String, Boolean>> randLvlMenuPairs = new ArrayList<>();
-        randLvlMenuPairs.add(new Pair<>("SMALL  (25000  blocks)", true));
-        randLvlMenuPairs.add(new Pair<>("MEDIUM (50000  blocks)", true));
-        randLvlMenuPairs.add(new Pair<>("LARGE  (100000 blocks)", true));
-        randLvlMenuPairs.add(new Pair<>("HUGE   (131070 blocks)", true));
-        randLvlMenu = new Menu("GENERATE RANDOM LEVEL", randLvlMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
+        List<MenuItem> randLvlMenuItems = new ArrayList<>();
+        randLvlMenuItems.add(new MenuItem("SMALL  (25000  blocks)", Menu.EditType.EditNoValue, null));
+        randLvlMenuItems.add(new MenuItem("MEDIUM (50000  blocks)", Menu.EditType.EditNoValue, null));
+        randLvlMenuItems.add(new MenuItem("LARGE  (100000 blocks)", Menu.EditType.EditNoValue, null));
+        randLvlMenuItems.add(new MenuItem("HUGE   (131070 blocks)", Menu.EditType.EditNoValue, null));
+        randLvlMenuItems.add(new MenuItem("SEED  ", Menu.EditType.EditSingleValue, new SingleValue(gameObject.getRandomLevelGenerator().getSeed(), MenuValue.Type.LONG)));
+
+        randLvlMenu = new OptionsMenu("GENERATE RANDOM LEVEL", randLvlMenuItems, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
@@ -237,7 +242,7 @@ public class Intrface {
 
             @Override
             protected void execute() {
-                String str = randLvlMenu.items.get(selected).getContent();
+                String str = randLvlMenu.items.get(selected).keyText.content;
                 String[] split = str.split("\\s+");
                 switch (split[0]) {
                     case "SMALL":
@@ -251,9 +256,11 @@ public class Intrface {
                         break;
                     case "HUGE":
                         numBlocks = 131070;
-                        break;
+                        break;                                         
                     default:
-                        numBlocks = 0;
+                    case "SEED":
+                        MenuItem selectedMenuItem = randLvlMenu.items.get(selected);
+                        gameObject.getRandomLevelGenerator().setSeed((long) selectedMenuItem.menuValue.getCurrentValue());
                         break;
                 }
 
@@ -261,8 +268,9 @@ public class Intrface {
                     randLvlDialog.open();
                 }
             }
+
         };
-        randLvlDialog.dialog.alignToNextChar();
+        randLvlMenu.getItems().get(4).menuValue.getValueText().setScale(2.0f);
 
         singlePlayerDialog = new ConcurrentDialog(Texture.FONT, new Vector2f(-0.95f, 0.65f), "START NEW GAME (Y/N)? ", "OK!", "ERROR!") {
             @Override
@@ -278,29 +286,32 @@ public class Intrface {
         };
         singlePlayerDialog.dialog.alignToNextChar();
 
-        List<Pair<String, Boolean>> optionsMenuPairs = new ArrayList<>();
-        optionsMenuPairs.add(new Pair<>("FPS CAP", true));
-        optionsMenuPairs.add(new Pair<>("RESOLUTION", true));
-        optionsMenuPairs.add(new Pair<>("FULLSCREEN", true));
-        optionsMenuPairs.add(new Pair<>("VSYNC", true));
-        optionsMenuPairs.add(new Pair<>("MOUSE SENSITIVITY", true));
-        optionsMenuPairs.add(new Pair<>("MUSIC VOLUME", true));
-        optionsMenuPairs.add(new Pair<>("SOUND VOLUME", true));
+        Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
+        Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
+        Object[] swtch = {"OFF", "ON"};
+        Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
+        Object[] volume = new Float[21];
+        int k = 0;
+        for (float i = 0.0f; i < 1.05f; i += 0.05f) {
+            volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
+        }
+
+        List<MenuItem> optionsMenuPairs = new ArrayList<>();
+        optionsMenuPairs.add(new MenuItem("FPS CAP", Menu.EditType.EditMultiValue, new MultiValue(fpsCaps, MenuValue.Type.INT, String.valueOf(Game.getFpsMax()))));
+        optionsMenuPairs.add(new MenuItem("RESOLUTION", Menu.EditType.EditMultiValue, new MultiValue(
+                resolutions,
+                MenuValue.Type.STRING,
+                String.valueOf(GameObject.MY_WINDOW.getWidth()) + "x" + String.valueOf(GameObject.MY_WINDOW.getHeight()))));
+        optionsMenuPairs.add(new MenuItem("FULLSCREEN", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isFullscreen() ? "ON" : "OFF")));
+        optionsMenuPairs.add(new MenuItem("VSYNC", Menu.EditType.EditMultiValue, new MultiValue(swtch, MenuValue.Type.STRING, GameObject.MY_WINDOW.isVsync() ? "ON" : "OFF")));
+        optionsMenuPairs.add(new MenuItem("MOUSE SENSITIVITY", Menu.EditType.EditMultiValue, new MultiValue(mouseSens, MenuValue.Type.FLOAT, Game.getMouseSensitivity())));
+        optionsMenuPairs.add(new MenuItem("MUSIC VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, musicPlayer.getGain())));
+        optionsMenuPairs.add(new MenuItem("SOUND VOLUME", Menu.EditType.EditMultiValue, new MultiValue(volume, MenuValue.Type.FLOAT, soundFXPlayer.getGain())));
+
         optionsMenu = new OptionsMenu("OPTIONS", optionsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
             protected void leave() {
                 mainMenu.open();
-            }
-
-            @Override
-            protected void getValues() {
-                options.get(0).getKey().setContent(String.valueOf(Game.getFpsMax()));
-                options.get(1).getKey().setContent(String.valueOf(GameObject.MY_WINDOW.getWidth()) + "x" + String.valueOf(GameObject.MY_WINDOW.getHeight()));
-                options.get(2).getKey().setContent(GameObject.MY_WINDOW.isFullscreen() ? "ON" : "OFF");
-                options.get(3).getKey().setContent(GameObject.MY_WINDOW.isVsync() ? "ON" : "OFF");
-                options.get(4).getKey().setContent(String.valueOf(Game.getMouseSensitivity()));
-                options.get(5).getKey().setContent(String.valueOf(musicPlayer.getGain()));
-                options.get(6).getKey().setContent(String.valueOf(soundFXPlayer.getGain()));
             }
 
             @Override
@@ -309,13 +320,13 @@ public class Intrface {
                 switch (selected) {
                     case 0:
                         command = Command.FPS_MAX;
-                        command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 1:
                         command = Command.RESOLUTION;
-                        String giveCurrent = (String) options.get(selected).getValue().giveCurrent();
+                        String giveCurrent = (String) items.get(selected).menuValue.getCurrentValue();
                         String things[] = giveCurrent.split("x");
                         command.getArgs().add(Integer.parseInt(things[0]));
                         command.getArgs().add(Integer.parseInt(things[1]));
@@ -323,7 +334,7 @@ public class Intrface {
                         Command.execute(command);
                         break;
                     case 2:
-                        String fullscreen = (String) options.get(selected).getValue().giveCurrent();
+                        String fullscreen = (String) items.get(selected).menuValue.getCurrentValue();
                         switch (fullscreen) {
                             case "ON":
                                 command = Command.FULLSCREEN;
@@ -336,7 +347,7 @@ public class Intrface {
                         Command.execute(command);
                         break;
                     case 3:
-                        String vsync = (String) options.get(selected).getValue().giveCurrent();
+                        String vsync = (String) items.get(selected).menuValue.getCurrentValue();
                         command = Command.VSYNC;
                         switch (vsync) {
                             case "ON":
@@ -346,12 +357,12 @@ public class Intrface {
                                 command.getArgs().add(false);
                                 break;
                         }
-                        FutureTask<Object> task = new FutureTask<Object>(command);
                         command.setMode(Command.Mode.SET);
+                        FutureTask<Object> task = new FutureTask<Object>(command);
                         Renderer.TASK_QUEUE.add(task);
                         break;
                     case 4:
-                        float msens = (float) options.get(selected).getValue().giveCurrent();
+                        float msens = (float) items.get(selected).menuValue.getCurrentValue();
                         command = Command.MOUSE_SENSITIVITY;
                         command.getArgs().add(msens);
                         command.setMode(Command.Mode.SET);
@@ -359,43 +370,27 @@ public class Intrface {
                         break;
                     case 5:
                         command = Command.MUSIC_VOLUME;
-                        command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                     case 6:
                         command = Command.SOUND_VOLUME;
-                        command.getArgs().add(options.get(selected).getValue().giveCurrent());
+                        command.getArgs().add(items.get(selected).menuValue.getCurrentValue());
                         command.setMode(Command.Mode.SET);
                         Command.execute(command);
                         break;
                 }
             }
         };
-        Object[] fpsCaps = {35, 60, 75, 100, 200, 300};
-        Object[] resolutions = GameObject.MY_WINDOW.giveAllResolutions();
-        Object[] swtch = {"OFF", "ON"};
-        Object[] mouseSens = {1.0f, 1.5f, 2.0f, 2.5f, 3.0f, 3.5f, 4.0f, 5.0f, 5.5f, 6.0f, 6.5f, 7.0f, 7.5f, 8.0f, 8.5f, 9.0f, 9.5f, 10.0f};
-        Object[] volume = new Float[21];
-        int k = 0;
-        for (float i = 0.0f; i < 1.05f; i += 0.05f) {
-            volume[k++] = Math.round(i * 100.0f) / 100.f; // rounding to two decimal places
-        }
 
-        optionsMenu.options.get(0).getValue().fetchFromArray(fpsCaps, 3);
-        optionsMenu.options.get(1).getValue().fetchFromArray(resolutions, 0);
-        optionsMenu.options.get(2).getValue().fetchFromArray(swtch, 0);
-        optionsMenu.options.get(3).getValue().fetchFromArray(swtch, 0);
-        optionsMenu.options.get(4).getValue().fetchFromArray(mouseSens, 1);
-        optionsMenu.options.get(5).getValue().fetchFromArray(volume, 10);
-        optionsMenu.options.get(6).getValue().fetchFromArray(volume, 10);
         optionsMenu.setAlignmentAmount(Text.ALIGNMENT_RIGHT);
 
-        List<Pair<String, Boolean>> editorMenuPairs = new ArrayList<>();
-        editorMenuPairs.add(new Pair<>("START NEW LEVEL", true));
-        editorMenuPairs.add(new Pair<>("GENERATE RANDOM LEVEL", true));
-        editorMenuPairs.add(new Pair<>("SAVE LEVEL TO FILE", true));
-        editorMenuPairs.add(new Pair<>("LOAD LEVEL FROM FILE", true));
+        List<MenuItem> editorMenuPairs = new ArrayList<>();
+        editorMenuPairs.add(new MenuItem("START NEW LEVEL", Menu.EditType.EditNoValue, null));
+        editorMenuPairs.add(new MenuItem("GENERATE RANDOM LEVEL", Menu.EditType.EditNoValue, null));
+        editorMenuPairs.add(new MenuItem("SAVE LEVEL TO FILE", Menu.EditType.EditNoValue, null));
+        editorMenuPairs.add(new MenuItem("LOAD LEVEL FROM FILE", Menu.EditType.EditNoValue, null));
 
         editorMenu = new Menu("EDITOR", editorMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
@@ -405,7 +400,7 @@ public class Intrface {
 
             @Override
             protected void execute() {
-                String s = editorMenu.getItems().get(editorMenu.getSelected()).getContent();
+                String s = editorMenu.items.get(editorMenu.getSelected()).keyText.content;
                 switch (s) {
                     case "START NEW LEVEL":
                         progText.setEnabled(true);
@@ -430,16 +425,16 @@ public class Intrface {
         };
         editorMenu.setAlignmentAmount(Text.ALIGNMENT_LEFT);
 
-        List<Pair<String, Boolean>> creditsMenuPairs = new ArrayList<>();
-        creditsMenuPairs.add(new Pair<>("Programmer", true));
-        creditsMenuPairs.add(new Pair<>("Alexander \"Ermac\" Stojanovich", true));
-        creditsMenuPairs.add(new Pair<>("Testers", true));
-        creditsMenuPairs.add(new Pair<>("Jesse \"13\" Collins", true));
-        creditsMenuPairs.add(new Pair<>("Edmund \"HellBlade64\" Alby", true));
-        creditsMenuPairs.add(new Pair<>("Art", true));
-        creditsMenuPairs.add(new Pair<>("Alexander \"Ermac\" Stojanovich", true));
-        creditsMenuPairs.add(new Pair<>("Music/FX", true));
-        creditsMenuPairs.add(new Pair<>("Jordan \"Erokia\" Powell", true));
+        List<MenuItem> creditsMenuPairs = new ArrayList<>();
+        creditsMenuPairs.add(new MenuItem("Programmer", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Testers", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Jesse \"13\" Collins", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Edmund \"HellBlade64\" Alby", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Art", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Alexander \"Ermac\" Stojanovich", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Music/FX", Menu.EditType.EditNoValue, null));
+        creditsMenuPairs.add(new MenuItem("Jordan \"Erokia\" Powell", Menu.EditType.EditNoValue, null));
 
         creditsMenu = new Menu("CREDITS", creditsMenuPairs, FONT_IMG, new Vector2f(0.0f, 0.5f), 2.0f) {
             @Override
@@ -455,11 +450,11 @@ public class Intrface {
         };
 
         int index = 0;
-        for (Text item : creditsMenu.items) {
+        for (MenuItem item : creditsMenu.items) {
             if (index == 3 || index < 3 && (index & 1) != 0 || index > 3 && (index & 1) == 0) {
-                item.setColor(Vector3fColors.WHITE);
-                item.setBuffered(false);
-                item.scale = 1.0f;
+                item.keyText.scale = 1.0f;
+                item.keyText.setColor(Vector3fColors.WHITE);
+                item.keyText.setBuffered(false);
             }
             index++;
         }
@@ -501,7 +496,6 @@ public class Intrface {
             fpsText.bufferAll();
         }
         fpsText.render(ifcShaderProgram);
-
         if (!posText.isBuffered()) {
             posText.bufferAll();
         }
@@ -510,7 +504,6 @@ public class Intrface {
             chunkText.bufferAll();
         }
         chunkText.render(ifcShaderProgram);
-
         if (!collText.isBuffered()) {
             collText.bufferAll();
         }
