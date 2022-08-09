@@ -19,6 +19,7 @@ package rs.alexanderstojanovich.evgl.critter;
 import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.core.Camera;
+import rs.alexanderstojanovich.evgl.level.LightSource;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.models.Model;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
@@ -74,7 +75,7 @@ public class Player extends ModelCritter {
     }
 
     @Override
-    public void render(List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
+    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram) {
 //        super.render(lightSrc, shaderProgram);
         if (givenControl) {
             if (currWeapon != null) {

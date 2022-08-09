@@ -256,7 +256,7 @@ public class Intrface {
                         break;
                     case "HUGE":
                         numBlocks = 131070;
-                        break;                                         
+                        break;
                     default:
                     case "SEED":
                         MenuItem selectedMenuItem = randLvlMenu.items.get(selected);

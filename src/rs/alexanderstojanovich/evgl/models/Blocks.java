@@ -18,8 +18,8 @@ package rs.alexanderstojanovich.evgl.models;
 
 import java.util.List;
 import java.util.function.Predicate;
-import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
+import rs.alexanderstojanovich.evgl.level.LightSource;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
@@ -58,7 +58,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // standard render all
-    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         if (shaderProgram != null && !blockList.isEmpty()) {
             for (Block block : blockList) {
                 block.render(lightSrc, shaderProgram);
@@ -67,7 +67,7 @@ public class Blocks { // mutual class for both solid blocks and fluid blocks wit
     }
 
     // powerful render if block is visible by camera
-    public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
         if (shaderProgram != null && !blockList.isEmpty()) {
             for (Block block : blockList) {
                 if (predicate.test(block)) {

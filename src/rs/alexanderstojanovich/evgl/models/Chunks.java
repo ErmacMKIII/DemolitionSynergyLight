@@ -25,6 +25,7 @@ import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.CacheModule;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
+import rs.alexanderstojanovich.evgl.level.LightSource;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
@@ -412,7 +413,7 @@ public class Chunks {
     }
 
     // for each instanced rendering
-    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -422,7 +423,7 @@ public class Chunks {
     }
 
     // for each instanced rendering
-    public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -431,7 +432,7 @@ public class Chunks {
         }
     }
 
-    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         for (int chunkId : queue) {
             Chunk chunk = getChunk(chunkId);
             if (chunk != null) {
@@ -443,7 +444,7 @@ public class Chunks {
         }
     }
 
-    public void renderIf(Queue<Integer> queue, ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
         for (int chunkId : queue) {
             Chunk chunk = getChunk(chunkId);
             if (chunk != null) {

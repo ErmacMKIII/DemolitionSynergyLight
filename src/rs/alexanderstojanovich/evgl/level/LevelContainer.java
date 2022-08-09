@@ -59,12 +59,15 @@ public class LevelContainer implements GravityEnviroment {
     private final GameObject gameObject;
 
     public static final Block SKYBOX = new Block("night");
+    public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
+    public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
+    public static final float SUN_SCALE = 64.0f;
 
     protected final Chunks solidChunks = new Chunks(true);
     protected final Chunks fluidChunks = new Chunks(false);
 
     public static final int MAX_LIGHTS = 256;
-    public static final List<Vector3f> LIGHT_SRC = new ArrayList<>();
+    public static final List<LightSource> LIGHT_SRC = new ArrayList<>();
 
     public static final int QUEUE_CAPACITY = 9;
     public static final Comparator<Pair<Integer, Float>> VIPAIR_COMPARATOR = new Comparator<Pair<Integer, Float>>() {
@@ -224,6 +227,10 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setPrimaryColor(SKYBOX_COLOR);
         SKYBOX.setUVsForSkybox();
         SKYBOX.setScale(SKYBOX_SCALE);
+
+        SUN.setPrimaryColor(SUN_COLOR);
+        SUN.pos = new Vector3f(0.0f, 8192.0f, 0.0f);
+        SUN.setScale(SUN_SCALE);
     }
 
     public LevelContainer(GameObject gameObject) {
@@ -296,7 +303,7 @@ public class LevelContainer implements GravityEnviroment {
             }
         }
 
-        levelActors.configureMainActor(new Vector3f(10.5f, Chunk.BOUND >> 3, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
+        levelActors.configureMainActor(new Vector3f(10.5f, 0.0f, -4.0f), new Vector3f(Camera.Z_AXIS), new Vector3f(Camera.Y_AXIS), new Vector3f(Camera.X_AXIS));
 
         levelActors.unfreeze();
         progress = 100.0f;
@@ -794,13 +801,16 @@ public class LevelContainer implements GravityEnviroment {
     public void update(float deltaTime) { // call it externally from the main thread 
         if (!working) { // don't update if working, it may screw up!
             SKYBOX.setrY(SKYBOX.getrY() + deltaTime / 16.0f);
+            SUN.pos.rotateAxis(deltaTime / 16.0f, 0.0f, 0.0f, 1.0f);
             cameraInFluid = isCameraInFluid();
 
             Camera mainCamera = levelActors.mainCamera();
             if (LIGHT_SRC.isEmpty()) {
-                LIGHT_SRC.add(mainCamera.getPos());
+                LIGHT_SRC.add(new LightSource(mainCamera.getPos(), SUN_COLOR, 1.5f));
+                LIGHT_SRC.add(new LightSource(SUN.pos, SUN_COLOR, (float) Math.pow(2.0, 28.0)));
             } else {
-                LIGHT_SRC.set(0, mainCamera.getPos());
+                LIGHT_SRC.set(0, new LightSource(mainCamera.getPos(), SUN_COLOR, 1.5f));
+                LIGHT_SRC.set(1, new LightSource(SUN.pos, SUN_COLOR, (float) Math.pow(2.0, 28.0)));
             }
 
         }
@@ -812,11 +822,17 @@ public class LevelContainer implements GravityEnviroment {
         }
 
         Camera mainCamera = levelActors.mainCamera();
+        mainCamera.render(ShaderProgram.getMainShader());
 
         if (!SKYBOX.isBuffered()) {
             SKYBOX.bufferAll();
         }
-        SKYBOX.render(LIGHT_SRC, ShaderProgram.getPlayerShader());
+        SKYBOX.render(LIGHT_SRC, ShaderProgram.getMainShader());
+
+        if (!SUN.isBuffered()) {
+            SUN.bufferAll();
+        }
+        SUN.render(LIGHT_SRC, ShaderProgram.getMainShader());
 
         Predicate<Block> predicate = new Predicate<Block>() {
             @Override
@@ -932,7 +948,7 @@ public class LevelContainer implements GravityEnviroment {
         return levelActors;
     }
 
-    public static List<Vector3f> getLIGHT_SRC() {
+    public static List<LightSource> getLIGHT_SRC() {
         return LIGHT_SRC;
     }
 

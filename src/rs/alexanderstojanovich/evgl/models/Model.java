@@ -39,6 +39,7 @@ import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL15;
 import org.lwjgl.opengl.GL20;
 import org.magicwerk.brownies.collections.GapList;
+import rs.alexanderstojanovich.evgl.level.LightSource;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
@@ -290,7 +291,7 @@ public class Model implements Comparable<Model> {
         }
     }
 
-    public void render(List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
+    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram) {
         if (!buffered) {
             return; // this is very critical!!
         }
@@ -312,8 +313,7 @@ public class Model implements Comparable<Model> {
             setAlpha(shaderProgram);
 
             shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
-            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
+            shaderProgram.updateUniform(lightSrc, "modelLights");
 
             Texture primaryTexture = Texture.TEX_MAP.get(texName).getKey();
             if (primaryTexture != null) { // this is primary texture
@@ -343,7 +343,7 @@ public class Model implements Comparable<Model> {
      * @param lightSrc light source
      * @param shaderProgram shaderProgram for the models
      */
-    public static void render(List<Model> models, int vbo, int ibo, List<Vector3f> lightSrc, ShaderProgram shaderProgram) {
+    public static void render(List<Model> models, int vbo, int ibo, List<LightSource> lightSrc, ShaderProgram shaderProgram) {
         GL15.glBindBuffer(GL15.GL_ARRAY_BUFFER, vbo);
         GL15.glBindBuffer(GL15.GL_ELEMENT_ARRAY_BUFFER, ibo);
 
@@ -359,8 +359,7 @@ public class Model implements Comparable<Model> {
             shaderProgram.bind();
 
             shaderProgram.updateUniform(lightSrc.size(), "modelLightNumber");
-            Vector3f[] lightSrcArr = new Vector3f[lightSrc.size()];
-            shaderProgram.updateUniform(lightSrc.toArray(lightSrcArr), "modelLights");
+            shaderProgram.updateUniform(lightSrc, "modelLights");
 
             for (Model model : models) {
                 model.transform(shaderProgram);

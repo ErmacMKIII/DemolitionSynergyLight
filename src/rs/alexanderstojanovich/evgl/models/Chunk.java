@@ -24,6 +24,7 @@ import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.CacheModule;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
+import rs.alexanderstojanovich.evgl.level.LightSource;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.util.Pair;
@@ -442,10 +443,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
             LevelContainer.putBlock(block);
             // update original block with neighbor blocks
             if (solid) {
-                // check if it's light block
+                LightSource lightSource = new LightSource(block.pos, block.primaryColor, 1.0f);
                 if (block.getTexName().equals("reflc")
-                        && !LevelContainer.LIGHT_SRC.contains(block.pos)) {
-                    LevelContainer.LIGHT_SRC.add(new Vector3f(block.pos));
+                        && !LevelContainer.LIGHT_SRC.contains(lightSource)) {
+                    LevelContainer.LIGHT_SRC.add(lightSource);
                 }
                 updateSolidForAdd(block);
             } else {
@@ -481,9 +482,10 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
                 // update original block with neighbor blocks
                 if (solid) {
                     // check if it's light block
+                    LightSource lightSource = new LightSource(block.pos, block.primaryColor, 1.0f);
                     if (block.getTexName().equals("reflc")
-                            && LevelContainer.LIGHT_SRC.contains(block.pos)) {
-                        LevelContainer.LIGHT_SRC.remove(new Vector3f(block.pos));
+                            && LevelContainer.LIGHT_SRC.contains(lightSource)) {
+                        LevelContainer.LIGHT_SRC.remove(lightSource);
                     }
                     updateSolidForRem(block);
                 } else {
@@ -523,7 +525,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
     }
 
     // it renders all of them instanced if they're visible
-    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0) {
             for (Tuple tuple : tupleList) {
                 tuple.render(shaderProgram, lightSrc);
@@ -531,7 +533,7 @@ public class Chunk implements Comparable<Chunk> { // some operations are mutuall
         }
     }
 
-    public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
         if (buffered && shaderProgram != null && !tupleList.isEmpty() && timeToLive > 0) {
             for (Tuple tuple : tupleList) {
                 tuple.renderIf(shaderProgram, lightSrc, predicate);
