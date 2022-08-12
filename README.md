@@ -2,7 +2,7 @@
 Voxel Engine (Incomplete Game) using latest LWJGL. Light version of original. Audio material was provided from freesound.org by Erokia.
 Designated for low-end spec and prior generation computers. Legacy OpenGL is used. It lacks fancy features such as Water Effects.
 
-![Alt text](https://i.postimg.cc/xdkzSqCd/DSynergy.png "DSynergy")
+![Alt text](/misc/DSynergy.png?raw=true "DSynergy")
 
 In order to build the project you are gonna need NetBeans IDE 8.2 (or later) and following libraries:
 

@@ -20,6 +20,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Queue;
 import java.util.function.Predicate;
+import org.joml.Matrix4f;
 import org.joml.Vector3f;
 import org.magicwerk.brownies.collections.BigList;
 import org.magicwerk.brownies.collections.GapList;
@@ -28,6 +29,7 @@ import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.level.LightSource;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
+import rs.alexanderstojanovich.evgl.texture.Texture;
 import rs.alexanderstojanovich.evgl.util.DSLogger;
 import rs.alexanderstojanovich.evgl.util.Pair;
 
@@ -43,6 +45,9 @@ public class Chunks {
     //--------------------------A--------B--------C-------D--------E-----------------------------
     //------------------------blocks-vec4Vbos-mat4Vbos-texture-faceEnBits------------------------
     private final List<Chunk> chunkList = new GapList<>();
+
+    protected final List<Tuple> optimizedTuples = new GapList<>();
+    protected boolean optimized = false;
 
     public Chunks(boolean solid) {
         this.solid = solid;
@@ -399,16 +404,16 @@ public class Chunks {
     }
 
     public void animate() { // call only for fluid blocks
-        for (Chunk chunk : getChunkList()) {
-            if (!CacheModule.isCached(chunk.getId(), solid) && chunk.isBuffered()) {
-                chunk.animate();
+        for (Tuple tuple : optimizedTuples) {
+            if (tuple.isBuffered()) {
+                tuple.animate();
             }
         }
     }
 
     public void prepare(boolean cameraInFluid) { // call only for fluid blocks before rendering        
-        for (Chunk chunk : chunkList) {
-            chunk.prepare(cameraInFluid);
+        for (Tuple tuple : optimizedTuples) {
+            tuple.prepare(cameraInFluid);
         }
     }
 
@@ -432,27 +437,58 @@ public class Chunks {
         }
     }
 
-    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
-        for (int chunkId : queue) {
-            Chunk chunk = getChunk(chunkId);
-            if (chunk != null) {
-                if (!chunk.isBuffered()) {
-                    chunk.bufferAll();
+    public void optimize(Queue<Integer> queue) {
+        optimizedTuples.clear();
+        int faceBits = 1; // starting from one, cuz zero is not rendered               
+        while (faceBits <= 63) {
+            for (String tex : Texture.TEX_WORLD) {
+                Tuple optmTuple = null;
+                for (int chunkId : queue) {
+                    Chunk chunk = getChunk(chunkId);
+                    if (chunk != null) {
+                        Tuple tuple = chunk.getTuple(tex, faceBits);
+                        if (tuple != null) {
+                            if (optmTuple == null) {
+                                optmTuple = new Tuple(tex, faceBits);
+                            }
+                            optmTuple.blockList.addAll(tuple.blockList);;
+                        }
+                    }
                 }
-                chunk.render(shaderProgram, lightSrc);
+
+                if (optmTuple != null) {
+                    optimizedTuples.add(optmTuple);
+                }
             }
+            faceBits++;
+        }
+
+        optimized = true;
+    }
+
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
+        if (!optimized) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples) {
+            if (!tuple.isBuffered()) {
+                tuple.bufferAll();
+            }
+            tuple.render(shaderProgram, lightSrc);
         }
     }
 
     public void renderIf(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
-        for (int chunkId : queue) {
-            Chunk chunk = getChunk(chunkId);
-            if (chunk != null) {
-                if (!chunk.isBuffered()) {
-                    chunk.bufferAll();
-                }
-                chunk.renderIf(shaderProgram, lightSrc, predicate);
+        if (!optimized) {
+            return;
+        }
+
+        for (Tuple tuple : optimizedTuples) {
+            if (!tuple.isBuffered()) {
+                tuple.bufferAll();
             }
+            tuple.renderIf(shaderProgram, lightSrc, predicate);
         }
     }
 
@@ -496,6 +532,14 @@ public class Chunks {
 
     public List<Chunk> getChunkList() {
         return chunkList;
+    }
+
+    public boolean isOptimized() {
+        return optimized;
+    }
+
+    public void setOptimized(boolean optimized) {
+        this.optimized = optimized;
     }
 
 }
