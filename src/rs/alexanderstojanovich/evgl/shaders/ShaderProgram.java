@@ -96,6 +96,10 @@ public class ShaderProgram {
         GL20.glLinkProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_LINK_STATUS) == GL11.GL_FALSE) {
             DSLogger.reportError(GL20.glGetShaderInfoLog(program, 1024), null);
+            for (Shader shader : shaders) {
+                GL20.glDeleteShader(shader.getShader());
+            }
+            GL20.glDeleteProgram(program);
             System.exit(1);
         }
     }
@@ -104,6 +108,10 @@ public class ShaderProgram {
         GL20.glValidateProgram(program);
         if (GL20.glGetProgrami(program, GL20.GL_VALIDATE_STATUS) == GL11.GL_FALSE) {
             DSLogger.reportError(GL20.glGetShaderInfoLog(program, 1024), null);
+            for (Shader shader : shaders) {
+                GL20.glDeleteShader(shader.getShader());
+            }
+            GL20.glDeleteProgram(program);
             System.exit(1);
         }
     }

@@ -62,6 +62,10 @@ public class LevelContainer implements GravityEnviroment {
     public static final Model SUN = Model.readFromObjFile(Game.WORLD_ENTRY, "sun.obj", "suntx");
     public static final Vector3f SUN_COLOR = new Vector3f(0.75f, 0.5f, 0.25f); // orange-yellow color
     public static final float SUN_SCALE = 64.0f;
+    public static final float SUN_INTENSITY = (float) (1 << 27);
+
+    public static final LightSource SUNLIGHT
+            = new LightSource(SUN.pos, SUN_COLOR, SUN_INTENSITY);
 
     protected final Chunks solidChunks = new Chunks(true);
     protected final Chunks fluidChunks = new Chunks(false);
@@ -229,13 +233,17 @@ public class LevelContainer implements GravityEnviroment {
         SKYBOX.setScale(SKYBOX_SCALE);
 
         SUN.setPrimaryColor(SUN_COLOR);
-        SUN.pos = new Vector3f(0.0f, 8192.0f, 0.0f);
+        SUN.pos = new Vector3f(0.0f, 8912.0f, 0.0f);
+        SUNLIGHT.pos = SUN.pos;
         SUN.setScale(SUN_SCALE);
     }
 
     public LevelContainer(GameObject gameObject) {
         this.gameObject = gameObject;
         this.cacheModule = new CacheModule(this);
+
+        LIGHT_SRC.add(0, SUNLIGHT);
+        LIGHT_SRC.add(1, levelActors.playerLight);
     }
 
     public static void printPositionMaps() {
@@ -283,6 +291,11 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_SOLID_MAP.clear();
         ALL_FLUID_MAP.clear();
+
+        LIGHT_SRC.clear();
+        LIGHT_SRC.add(SUNLIGHT);
+        LIGHT_SRC.add(levelActors.playerLight);
+
         LIGHT_SRC.clear();
         CacheModule.deleteCache();
 
@@ -335,6 +348,11 @@ public class LevelContainer implements GravityEnviroment {
 
         ALL_SOLID_MAP.clear();
         ALL_FLUID_MAP.clear();
+
+        LIGHT_SRC.clear();
+        LIGHT_SRC.add(SUNLIGHT);
+        LIGHT_SRC.add(levelActors.playerLight);
+
         CacheModule.deleteCache();
 
         if (numberOfBlocks > 0 && numberOfBlocks <= MAX_NUM_OF_SOLID_BLOCKS + MAX_NUM_OF_FLUID_BLOCKS) {
@@ -463,7 +481,11 @@ public class LevelContainer implements GravityEnviroment {
 
             ALL_SOLID_MAP.clear();
             ALL_FLUID_MAP.clear();
+
             LIGHT_SRC.clear();
+            LIGHT_SRC.add(SUNLIGHT);
+            LIGHT_SRC.add(levelActors.playerLight);
+
             CacheModule.deleteCache();
 
             pos += 2;
@@ -805,14 +827,7 @@ public class LevelContainer implements GravityEnviroment {
             cameraInFluid = isCameraInFluid();
 
             Camera mainCamera = levelActors.mainCamera();
-            if (LIGHT_SRC.isEmpty()) {
-                LIGHT_SRC.add(new LightSource(mainCamera.getPos(), SUN_COLOR, 1.5f));
-                LIGHT_SRC.add(new LightSource(SUN.pos, SUN_COLOR, (float) (1 << 27)));
-            } else {
-                LIGHT_SRC.set(0, new LightSource(mainCamera.getPos(), SUN_COLOR, 1.5f));
-                LIGHT_SRC.set(1, new LightSource(SUN.pos, SUN_COLOR, (float) (1 << 27)));
-            }
-
+            levelActors.playerLight.pos = mainCamera.getPos();
         }
     }
 
