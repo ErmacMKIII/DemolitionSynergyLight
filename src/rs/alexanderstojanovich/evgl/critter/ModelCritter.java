@@ -16,10 +16,9 @@
  */
 package rs.alexanderstojanovich.evgl.critter;
 
-import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.core.Camera;
-import rs.alexanderstojanovich.evgl.level.LightSource;
+import rs.alexanderstojanovich.evgl.level.LightSources;
 import rs.alexanderstojanovich.evgl.models.Model;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
@@ -94,11 +93,9 @@ public class ModelCritter implements Critter {
 
     @Override
     public void movePredictorForward(float amount) {
-        if (givenControl) {
-            Vector3f temp1 = new Vector3f();
-            Vector3f temp2 = new Vector3f();
-            predictor = model.pos.add(front.mul(amount, temp1), temp2);
-        }
+        Vector3f temp1 = new Vector3f();
+        Vector3f temp2 = new Vector3f();
+        predictor = model.pos.add(front.mul(amount, temp1), temp2);
     }
 
     @Override
@@ -173,7 +170,7 @@ public class ModelCritter implements Critter {
     }
 
     @Override
-    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram) {
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
         if (!model.isBuffered()) {
             model.bufferAll();
         }

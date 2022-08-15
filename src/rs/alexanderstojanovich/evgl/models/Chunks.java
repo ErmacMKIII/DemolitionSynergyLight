@@ -27,6 +27,7 @@ import org.magicwerk.brownies.collections.GapList;
 import rs.alexanderstojanovich.evgl.level.CacheModule;
 import rs.alexanderstojanovich.evgl.level.LevelContainer;
 import rs.alexanderstojanovich.evgl.level.LightSource;
+import rs.alexanderstojanovich.evgl.level.LightSources;
 import rs.alexanderstojanovich.evgl.main.GameObject;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 import rs.alexanderstojanovich.evgl.texture.Texture;
@@ -418,7 +419,7 @@ public class Chunks {
     }
 
     // for each instanced rendering
-    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
+    public void render(ShaderProgram shaderProgram, LightSources lightSrc) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -428,7 +429,7 @@ public class Chunks {
     }
 
     // for each instanced rendering
-    public void renderIf(ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, LightSources lightSrc, Predicate<Block> predicate) {
         for (Chunk chunk : chunkList) {
             if (!chunk.isBuffered()) {
                 chunk.bufferAll();
@@ -466,7 +467,7 @@ public class Chunks {
         optimized = true;
     }
 
-    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc) {
+    public void render(Queue<Integer> queue, ShaderProgram shaderProgram, LightSources lightSrc) {
         if (!optimized) {
             return;
         }
@@ -479,7 +480,7 @@ public class Chunks {
         }
     }
 
-    public void renderIf(Queue<Integer> queue, ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(Queue<Integer> queue, ShaderProgram shaderProgram, LightSources lightSrc, Predicate<Block> predicate) {
         if (!optimized) {
             return;
         }

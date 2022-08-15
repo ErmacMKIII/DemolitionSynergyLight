@@ -25,6 +25,7 @@ import java.util.function.Predicate;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
 import rs.alexanderstojanovich.evgl.level.LightSource;
+import rs.alexanderstojanovich.evgl.level.LightSources;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
@@ -141,7 +142,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram, List<LightSource> lightSrc) {
+    public void render(ShaderProgram shaderProgram, LightSources lightSrc) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be 
         String texName = name.substring(0, 5);
@@ -152,7 +153,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     }
 
     @Override
-    public void renderIf(ShaderProgram shaderProgram, List<LightSource> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, LightSources lightSrc, Predicate<Block> predicate) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
         String texName = name.substring(0, 5);

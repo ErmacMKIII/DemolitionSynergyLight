@@ -16,10 +16,9 @@
  */
 package rs.alexanderstojanovich.evgl.critter;
 
-import java.util.List;
 import org.joml.Vector3f;
 import rs.alexanderstojanovich.evgl.core.Camera;
-import rs.alexanderstojanovich.evgl.level.LightSource;
+import rs.alexanderstojanovich.evgl.level.LightSources;
 import rs.alexanderstojanovich.evgl.main.Game;
 import rs.alexanderstojanovich.evgl.models.Model;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
@@ -75,7 +74,7 @@ public class Player extends ModelCritter {
     }
 
     @Override
-    public void render(List<LightSource> lightSrc, ShaderProgram shaderProgram) {
+    public void render(LightSources lightSrc, ShaderProgram shaderProgram) {
 //        super.render(lightSrc, shaderProgram);
         if (givenControl) {
             if (currWeapon != null) {
@@ -159,6 +158,18 @@ public class Player extends ModelCritter {
     }
 
     @Override
+    public void setPitch(float pitch) {
+        super.setPitch(pitch);
+        linkDirectionVectors();
+    }
+
+    @Override
+    public void setYaw(float yaw) {
+        super.setYaw(yaw);
+        linkDirectionVectors();
+    }
+
+    @Override
     public void lookAtAngle(float yaw, float pitch) {
         super.lookAtAngle(yaw, pitch);
         if (givenControl) {
@@ -174,18 +185,6 @@ public class Player extends ModelCritter {
             camera.lookAt(sensitivity, xoffset, yoffset);
             linkDirectionVectors();
         }
-    }
-
-    @Override
-    public void setPitch(float pitch) {
-        super.setPitch(pitch);
-        linkDirectionVectors();
-    }
-
-    @Override
-    public void setYaw(float yaw) {
-        super.setYaw(yaw);
-        linkDirectionVectors();
     }
 
     @Override

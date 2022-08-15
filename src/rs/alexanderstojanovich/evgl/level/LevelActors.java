@@ -55,7 +55,7 @@ public class LevelActors {
         }
     }
 
-    public void render(List<LightSource> lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
+    public void render(LightSources lightSrc, ShaderProgram mainActorShader, ShaderProgram npcShader) {
         for (NPC npc : npcList) {
             npc.render(lightSrc, npcShader);
         }
