@@ -19,11 +19,13 @@ package rs.alexanderstojanovich.evgl.models;
 import java.nio.FloatBuffer;
 import java.nio.IntBuffer;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.function.Predicate;
-import org.joml.Vector3f;
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.GL15;
+import rs.alexanderstojanovich.evgl.level.LightSource;
+import rs.alexanderstojanovich.evgl.level.LightSources;
 import rs.alexanderstojanovich.evgl.shaders.ShaderProgram;
 
 /**
@@ -34,8 +36,7 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     // all blocks in the tuple have the same properties, 
     // like model matrices, color and texture name, and enabled faces in 6-bit represenation
 
-    protected final String texName;
-    protected final int faceEnBits;
+    protected final String name;
 
     protected FloatBuffer fb;
     protected int vbo = 0;
@@ -43,13 +44,28 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     protected final IntBuffer intBuff;
     protected int ibo = 0;
     protected final List<Vertex> vertices = new ArrayList<>();
+    protected final int indicesNum;
+
+    public static final Comparator<Tuple> TUPLE_COMP = new Comparator<Tuple>() {
+        @Override
+        public int compare(Tuple o1, Tuple o2) {
+            return o1.getName().compareTo(o2.getName());
+        }
+    };
 
     public Tuple(String texName, int faceEnBits) {
-        this.texName = texName;
-        this.faceEnBits = faceEnBits;
+        this.name = String.format("%s%02d", texName, faceEnBits);
         Block.deepCopyTo(vertices, texName);
         Block.setFaceBits(vertices, faceEnBits);
         this.intBuff = Block.createIntBuffer(faceEnBits);
+        int numberOfOnes = 0;
+        for (int j = Block.LEFT; j <= Block.FRONT; j++) {
+            int mask = 1 << j;
+            if ((faceEnBits & mask) != 0) {
+                numberOfOnes++;
+            }
+        }
+        this.indicesNum = 6 * numberOfOnes;
     }
 
     // renderer does this stuff prior to any rendering
@@ -126,20 +142,24 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
     }
 
     @Override
-    public void render(ShaderProgram shaderProgram, List<Vector3f> lightSrc) {
+    public void render(ShaderProgram shaderProgram, LightSources lightSrc) {
         // if tuple has any blocks to be rendered and
-        // if face bits are greater than zero, i.e. tuple has something to be rendered
+        // if face bits are greater than zero, i.e. tuple has something to be 
+        String texName = name.substring(0, 5);
+        int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
-            Block.render(blockList, texName, vbo, ibo, lightSrc, shaderProgram);
+            Block.render(blockList, texName, vbo, ibo, indicesNum, lightSrc, shaderProgram);
         }
     }
 
     @Override
-    public void renderIf(ShaderProgram shaderProgram, List<Vector3f> lightSrc, Predicate<Block> predicate) {
+    public void renderIf(ShaderProgram shaderProgram, LightSources lightSrc, Predicate<Block> predicate) {
         // if tuple has any blocks to be rendered and
         // if face bits are greater than zero, i.e. tuple has something to be rendered
+        String texName = name.substring(0, 5);
+        int faceEnBits = Integer.parseInt(name.substring(5));
         if (buffered && !blockList.isEmpty() && faceEnBits > 0) {
-            Block.renderIf(blockList, texName, vbo, ibo, lightSrc, shaderProgram, predicate);
+            Block.renderIf(blockList, texName, vbo, ibo, indicesNum, lightSrc, shaderProgram, predicate);
         }
     }
 
@@ -161,6 +181,14 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         }
     }
 
+    public String texName() {
+        return name.substring(0, 5);
+    }
+
+    public int faceBits() {
+        return Integer.parseInt(name.substring(5));
+    }
+
     public List<Vertex> getVertices() {
         return vertices;
     }
@@ -177,16 +205,17 @@ public class Tuple extends Blocks { // tuple is distinct rendering object for in
         return ibo;
     }
 
-    public String getTexName() {
-        return texName;
-    }
-
-    public int getFaceEnBits() {
-        return faceEnBits;
+    public String getName() {
+        return name;
     }
 
     public IntBuffer getIntBuff() {
         return intBuff;
+    }
+
+    @Override
+    public String toString() {
+        return "Tuple{" + "name=" + name + '}';
     }
 
 }
