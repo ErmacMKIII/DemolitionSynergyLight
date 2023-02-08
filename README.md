@@ -17,3 +17,6 @@ Please download them from: https://www.mediafire.com/folder/4s73lh2imzew1/LIBS_M
 
 Testers: 13, Hellblade64;
 Credits: Erokia
+
+Notice that this project is no longer maintained.
+Additionally, this project can serve for learning purposes.
